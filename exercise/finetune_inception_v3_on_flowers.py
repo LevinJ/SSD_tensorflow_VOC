@@ -1,5 +1,7 @@
 
-import train_classifier_mgr
+from exercise import train_classifier_mgr
+
+
 import tensorflow as tf
 
  
@@ -36,10 +38,23 @@ class FineTuneInceptionV3Flower(object):
         FLAGS.log_every_n_steps = 100
         FLAGS.optimizer = 'rmsprop'
         FLAGS.weight_decay = 0.00004
+                
+#         train_classifier_mgr.main(None)
         
-        FLAGS.clone_on_cpu = True
+        
+        #Further fine tune
+        FLAGS.train_dir = '/tmp/flowers-models/inception_v3/all'
+        FLAGS.checkpoint_path = '/tmp/flowers-models/inception_v3'
+        FLAGS.max_number_of_steps = 500
+        FLAGS.learning_rate = 0.0001
+        FLAGS.log_every_n_steps = 10
         
         train_classifier_mgr.main(None)
+
+        
+      
+        
+        
         return
     
 
