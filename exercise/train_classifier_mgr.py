@@ -27,7 +27,7 @@ from nets import nets_factory
 from preprocessing import preprocessing_factory
 from tensorflow.python.platform import flags
 
-slim = tf.contrib.slim
+import tensorflow.contrib.slim as slim
 
 tf.app.flags.DEFINE_string(
         'master', '', 'The address of the TensorFlow master to use.')
