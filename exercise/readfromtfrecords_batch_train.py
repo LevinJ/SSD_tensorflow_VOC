@@ -43,32 +43,33 @@ class ReadRecordsBatchTrain(object):
         [image, label] = provider.get(['image', 'label'])
         label -= self.labels_offset
         
-#         network_fn = nets_factory.get_network_fn(
-#                 self.model_name,
-#                 num_classes=(dataset.num_classes - self.labels_offset),
-#                 weight_decay=self.weight_decay,
-#                 is_training=True)
-# 
-#         train_image_size = self.train_image_size or network_fn.default_image_size
-#         
-#         preprocessing_name = self.preprocessing_name or self.model_name
-#         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-#                 preprocessing_name,
-#                 is_training=True)
-# 
-#         image = image_preprocessing_fn(image, train_image_size, train_image_size)
-
-#         images, labels = tf.train.batch(
-#                 [image, label],
-#                 batch_size=self.batch_size,
-#                 num_threads=self.num_preprocessing_threads,
-#                 capacity=5 * self.batch_size)
-#         labels = slim.one_hot_encoding(
-#                 labels, dataset.num_classes - FLAGS.labels_offset)
-#         batch_queue = slim.prefetch_queue.prefetch_queue(
-#                 [images, labels], capacity=2 * deploy_config.num_clones)
+        network_fn = nets_factory.get_network_fn(
+                self.model_name,
+                num_classes=(dataset.num_classes - self.labels_offset),
+                weight_decay=self.weight_decay,
+                is_training=True)
+ 
+        train_image_size = self.train_image_size or network_fn.default_image_size
+         
+        preprocessing_name = self.preprocessing_name or self.model_name
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
+                preprocessing_name,
+                is_training=True)
+ 
+        image = image_preprocessing_fn(image, train_image_size, train_image_size)
+ 
+        images, labels = tf.train.batch(
+                [image, label],
+                batch_size=self.batch_size,
+                num_threads=self.num_preprocessing_threads,
+                capacity=5 * self.batch_size)
+        labels = slim.one_hot_encoding(
+                labels, dataset.num_classes - self.labels_offset)
+        batch_queue = slim.prefetch_queue.prefetch_queue(
+                [images, labels], capacity=2)
+        images, labels = batch_queue.dequeue()
         
-        return image, label
+        return images, labels
     
     def run_1(self):
         tf.logging.set_verbosity(tf.logging.INFO)
@@ -105,6 +106,10 @@ class ReadRecordsBatchTrain(object):
                     for _ in range(2):
                         
                         images_data, labels_data = sess.run([images, labels]) 
+                        images_data = images_data[0]
+                        labels_data = labels_data[0]
+                        images_data = ((images_data/2 + 0.5)*255).astype(np.uint8)
+
                         self.disp_image(images_data, labels_data)
         return
     
