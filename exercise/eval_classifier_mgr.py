@@ -25,7 +25,7 @@ from datasets import dataset_factory
 from nets import nets_factory
 from preprocessing import preprocessing_factory
 
-slim = tf.contrib.slim
+import tensorflow.contrib.slim as slim
 
 tf.app.flags.DEFINE_integer(
         'batch_size', 100, 'The number of samples in each batch.')
