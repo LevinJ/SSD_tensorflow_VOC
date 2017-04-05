@@ -313,6 +313,7 @@ class SlimTrainMgr():
     
     def run(self):
         
+        #fine tune the new parameters
         self.train_dir = '/tmp/flowers-models/inception_v3'
         self.dataset_name = 'flowers'
         self.dataset_split_name = 'train'
@@ -330,6 +331,18 @@ class SlimTrainMgr():
         self.log_every_n_steps = 100
         self.optimizer = 'rmsprop'
         self.weight_decay = 0.00004
+        
+        #fine tune all parameters
+        self.train_dir = '/tmp/flowers-models/inception_v3/all'
+        
+        self.checkpoint_path = '/tmp/flowers-models/inception_v3'
+        self.checkpoint_exclude_scopes = None
+        self.trainable_scopes = None
+        
+        self.max_number_of_steps = 500
+        self.learning_rate=0.0001
+        self.log_every_n_steps = 10
+       
         
         images, labels = self.__get_images_labels()
         self.__setup_training(images, labels)

@@ -14,7 +14,7 @@ class SlimEvalMgr(object):
         self.dataset_split_name = 'validation'
         self.dataset_dir = '/home/levin/workspace/detection/data/flower'
         
-        self.batch_size = 32
+        self.batch_size = 100
         self.labels_offset = 0
         self.eval_image_size = None
         self.preprocessing_name = None
@@ -65,6 +65,8 @@ class SlimEvalMgr(object):
         
         return images, labels
     def __setup_eval(self, images, labels):
+        tf_global_step = slim.get_or_create_global_step()
+        
         logits, _ = self.network_fn(images)
         variables_to_restore = slim.get_variables_to_restore()
         predictions = tf.argmax(logits, 1)
@@ -113,6 +115,10 @@ class SlimEvalMgr(object):
         self.dataset_split_name= 'validation'
         self.dataset_dir= '/home/levin/workspace/detection/data/flower'
         self.model_name = 'inception_v3'
+        
+        
+        self.checkpoint_path = '/tmp/flowers-models/inception_v3/all'
+        self.eval_dir = '/tmp/flowers-models/inception_v3/eval/all'
         images, labels = self.__get_images_labels()
         self.__setup_eval(images, labels)
         
