@@ -8,7 +8,7 @@ import numpy as np
 import math
 
 
-class SlimEvalTest(object):
+class SlimEvalMgr(object):
     def __init__(self):
         self.dataset_name = 'flowers'
         self.dataset_split_name = 'validation'
@@ -123,5 +123,5 @@ class SlimEvalTest(object):
 
 
 if __name__ == "__main__":   
-    obj= SlimEvalTest()
+    obj= SlimEvalMgr()
     obj.run()
