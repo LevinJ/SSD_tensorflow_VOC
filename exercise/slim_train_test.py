@@ -212,6 +212,7 @@ class SlimTrainMgr():
     
     
     def __setup_training(self,images, labels):
+        tf.logging.set_verbosity(tf.logging.INFO)
         logits, end_points = self.network_fn(images)
 
         #############################
