@@ -37,7 +37,7 @@ class SlimEvalMgr(object):
                 shuffle=False,
                 common_queue_capacity=2 * self.batch_size,
                 common_queue_min=self.batch_size)
-        [image, label] = provider.get(['image', 'label'])
+        [image_raw, label] = provider.get(['image', 'label'])
         label -= self.labels_offset
         
         network_fn = nets_factory.get_network_fn(
@@ -52,10 +52,15 @@ class SlimEvalMgr(object):
 
         eval_image_size = self.eval_image_size or network_fn.default_image_size
 
-        image = image_preprocessing_fn(image, eval_image_size, eval_image_size)
+        image = image_preprocessing_fn(image_raw, eval_image_size, eval_image_size)
+        
+        # Preprocess the image for display purposes.
+        image_raw = tf.expand_dims(image_raw, 0)
+        image_raw = tf.image.resize_images(image_raw, [eval_image_size, eval_image_size])
+        image_raw = tf.squeeze(image_raw)
 
-        images, labels = tf.train.batch(
-                [image, label],
+        images, labels, image_raws = tf.train.batch(
+                [image, label, image_raw],
                 batch_size=self.batch_size,
                 num_threads=self.num_preprocessing_threads,
                 capacity=5 * self.batch_size)
@@ -63,8 +68,8 @@ class SlimEvalMgr(object):
         self.network_fn = network_fn
         self.dataset = dataset
         
-        return images, labels
-    def __setup_eval(self, images, labels):
+        return images, labels,image_raws
+    def __setup_eval(self, images, labels,image_raws):
         tf_global_step = slim.get_or_create_global_step()
         
         logits, _ = self.network_fn(images)
@@ -93,14 +98,38 @@ class SlimEvalMgr(object):
         else:
             checkpoint_path = self.checkpoint_path
 
-        tf.logging.info('Evaluating %s' % checkpoint_path)
+#         tf.logging.info('Evaluating %s' % checkpoint_path)
 
-        slim.evaluation.evaluate_once('',
-                checkpoint_path=checkpoint_path,
-                logdir=self.eval_dir,
-                num_evals=num_batches,
-                eval_op=list(names_to_updates.values()),
-                variables_to_restore=variables_to_restore)
+#         slim.evaluation.evaluate_once('',
+#                 checkpoint_path=checkpoint_path,
+#                 logdir=self.eval_dir,
+#                 num_evals=num_batches,
+#                 eval_op=list(names_to_updates.values()),
+#                 variables_to_restore=variables_to_restore)
+        
+        #Display images
+        probabilities = tf.nn.softmax(logits)
+        init_fn = slim.assign_from_checkpoint_fn(
+              checkpoint_path,
+              slim.get_variables_to_restore())
+        with tf.Session() as sess:
+            with slim.queues.QueueRunners(sess):
+                sess.run(tf.local_variables_initializer())
+                init_fn(sess)
+                np_probabilities, np_image_raws, np_labels = sess.run([probabilities, image_raws, labels])
+        
+                for i in range(self.batch_size): 
+                    image = np_image_raws[i, :, :, :]
+                    true_label = np_labels[i]
+                    predicted_label = np.argmax(np_probabilities[i, :])
+                    predicted_name = self.dataset.labels_to_names[predicted_label]
+                    true_name = self.dataset.labels_to_names[true_label]
+                    
+                    plt.figure()
+                    plt.imshow(image.astype(np.uint8))
+                    plt.title('Ground Truth: [%s], Prediction [%s]' % (true_name, predicted_name))
+                    plt.axis('off')
+                    plt.show()
         
         
         return
@@ -119,8 +148,8 @@ class SlimEvalMgr(object):
         
         self.checkpoint_path = '/tmp/flowers-models/inception_v3/all'
         self.eval_dir = '/tmp/flowers-models/inception_v3/eval/all'
-        images, labels = self.__get_images_labels()
-        self.__setup_eval(images, labels)
+        images, labels,image_raws = self.__get_images_labels()
+        self.__setup_eval(images, labels,image_raws)
         
         
         return
