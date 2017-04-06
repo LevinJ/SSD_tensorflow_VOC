@@ -340,7 +340,7 @@ class SlimTrainMgr():
         self.batch_size= 32
         self.learning_rate = 0.01
         self.learning_rate_decay_type = 'fixed'
-        self.save_interval_secs = 60
+        self.save_interval_secs = 600
         self.save_summaries_secs= 60
         self.log_every_n_steps = 100
         self.optimizer = 'rmsprop'
