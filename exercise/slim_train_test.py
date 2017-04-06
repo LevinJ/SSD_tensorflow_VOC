@@ -243,9 +243,7 @@ class SlimTrainMgr():
         
         train_op = slim.learning.create_train_op(total_loss, optimizer, variables_to_train=variables_to_train)
         
-#         summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES)
-        # Merge all summaries together.
-#         summary_op = tf.summary.merge(list(summaries), name='summary_op')
+        self.__add_summaries(end_points, learning_rate, total_loss)
         
         ###########################
         # Kicks off the training. #
@@ -261,6 +259,22 @@ class SlimTrainMgr():
                 save_interval_secs=self.save_interval_secs)
         
         
+        return
+    def __add_summaries(self,end_points,learning_rate,total_loss):
+        for end_point in end_points:
+            x = end_points[end_point]
+            tf.summary.histogram('activations/' + end_point, x)
+            tf.summary.scalar('sparsity/' + end_point, tf.nn.zero_fraction(x))
+        for loss in tf.get_collection(tf.GraphKeys.LOSSES):
+            tf.summary.scalar('losses/%s' % loss.op.name, loss)
+        # Add total_loss to summary.
+        tf.summary.scalar('total_loss', total_loss)
+
+        # Add summaries for variables.
+        for variable in slim.get_model_variables():
+            tf.summary.histogram(variable.op.name, variable)
+        tf.summary.scalar('learning_rate', learning_rate)
+
         return
     def __get_init_fn(self):
         """Returns a function run by the chief worker to warm-start the training.
