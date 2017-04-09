@@ -83,11 +83,13 @@ def bboxes_draw_on_img(img, classes, scores, bboxes, colors, thickness=2):
 # =========================================================================== #
 # Matplotlib show...
 # =========================================================================== #
-def plt_bboxes(img, classes, scores, bboxes, figsize=(10,10), linewidth=1.5):
+def plt_bboxes(img, classes, scores, bboxes, figsize=(10,10), linewidth=1.5,neg_marks=None, title=None):
     """Visualize bounding boxes. Largely inspired by SSD-MXNET!
     """
     fig = plt.figure(figsize=figsize)
     plt.imshow(img)
+    if title is not None:
+        plt.suptitle(title)
     height = img.shape[0]
     width = img.shape[1]
     colors = dict()
@@ -101,14 +103,23 @@ def plt_bboxes(img, classes, scores, bboxes, figsize=(10,10), linewidth=1.5):
             xmin = int(bboxes[i, 1] * width)
             ymax = int(bboxes[i, 2] * height)
             xmax = int(bboxes[i, 3] * width)
-            rect = plt.Rectangle((xmin, ymin), xmax - xmin,
-                                 ymax - ymin, fill=False,
-                                 edgecolor=colors[cls_id],
-                                 linewidth=linewidth)
+            if (neg_marks is not None) and neg_marks[i]:
+                #it's negative sample default box
+                rect = plt.Rectangle((xmin, ymin), xmax - xmin,
+                                     ymax - ymin, fill=False,
+                                     edgecolor=colors[cls_id],
+                                     linestyle = '--',
+                                     linewidth=linewidth/2)
+            else:
+                rect = plt.Rectangle((xmin, ymin), xmax - xmin,
+                                     ymax - ymin, fill=False,
+                                     edgecolor=colors[cls_id],
+                                     linestyle = '-',
+                                     linewidth=linewidth)
             plt.gca().add_patch(rect)
             class_name = str(cls_id)
             plt.gca().text(xmin, ymin - 2,
                            '{:s} | {:.3f}'.format(class_name, score),
                            bbox=dict(facecolor=colors[cls_id], alpha=0.5),
                            fontsize=12, color='white')
-    plt.show()
+    
