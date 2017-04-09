@@ -65,6 +65,7 @@ class SSD():
         self.__anchors = None
         #format: layer number, numpy format for ymin,xmin,ymax,xmax
         self.__anchors_minmax = None
+        self.model_name = 'ssd_300_vgg'
         
         return
     def get_all_anchors(self, minmaxformat=False):

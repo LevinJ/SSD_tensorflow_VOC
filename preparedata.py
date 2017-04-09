@@ -3,11 +3,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import tensorflow.contrib.slim as slim
 # from nets import nets_factory
-# from preprocessing import preprocessing_factory
+from preprocessing import preprocessing_factory
 import numpy as np
 import cv2
 from utility import visualization
 from nets.ssd import g_ssd_model
+from preprocessing.ssd_vgg_preprocessing import np_image_unwhitened
 
 
 
@@ -46,22 +47,21 @@ class PrepareData():
                                                          'object/bbox'])
         glabels -= self.labels_offset
         
+        # Select the preprocessing function.
+        preprocessing_name = g_ssd_model.model_name
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
+            preprocessing_name, is_training=True)
+        # Pre-processing image, labels and bboxes.
+        image, glabels, gbboxes = \
+            image_preprocessing_fn(image, glabels, gbboxes, g_ssd_model.img_shape)
+        
 #         network_fn = nets_factory.get_network_fn(
 #                 self.model_name,
 #                 num_classes=(dataset.num_classes - self.labels_offset),
 #                 weight_decay=self.weight_decay,
 #                 is_training=True)
-#  
-#         train_image_size = self.train_image_size or network_fn.default_image_size
-#          
-#         preprocessing_name = self.preprocessing_name or self.model_name
-#         image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-#                 preprocessing_name,
-#                 is_training=True)
-#  
-#         image = image_preprocessing_fn(image, train_image_size, train_image_size)
-        # Encode groundtruth information for all default boxes
-         
+
+        # Assign groundtruth information for all default/anchor boxes
         target_labels, target_localizations, target_scores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
 #         batch_shape = [1] + [len(ssd_anchors)] * 3  
 #         images, labels = tf.train.batch(
@@ -100,8 +100,12 @@ class PrepareData():
             scores = target_scores_data[i][pos_sample_inds]
             bboxes_default= g_ssd_model.get_all_anchors(minmaxformat=True)[i][pos_sample_inds]
             
+            
+            
             bboxes_gt = g_ssd_model.ssd_bboxes_decode(target_localizations_data[i][pos_sample_inds], 
                                        all_anchors[i][pos_sample_inds])
+            
+            print("default box minimum, {} gt box minimum, {}".format(bboxes_default.min(), bboxes_gt.min()))
             
             marks_default = np.full(classes.shape, True)
             marks_gt = np.full(classes.shape, False)
@@ -147,6 +151,7 @@ class PrepareData():
 
                         if i !=2 :
                             continue
+                        image_data = np_image_unwhitened(image_data)
                         self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
                         self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                         
