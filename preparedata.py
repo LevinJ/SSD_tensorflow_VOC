@@ -94,12 +94,26 @@ class PrepareData():
                 continue
             print('Found  {} matched default boxes in layer {}'.format(num_pos,g_ssd_model.feat_layers[i]))
             pos_sample_inds = (target_score_data > 0.5).nonzero()
+            pos_sample_inds_2 = [pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
 
             classes = target_labels_data[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
             scores = target_scores_data[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
-            bboxes = g_ssd_model.ssd_bboxes_decode(target_localizations_data[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]], 
-                                                   all_anchors[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]])
-            neg_marks = np.full(classes.shape, False)
+            bboxes_default= g_ssd_model.get_all_anchors(minmaxformat=True)[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
+            
+            bboxes_gt = g_ssd_model.ssd_bboxes_decode(target_localizations_data[i][pos_sample_inds_2], 
+                                       all_anchors[i][pos_sample_inds_2])
+            
+            marks_default = np.full(classes.shape, True)
+            marks_gt = np.full(classes.shape, False)
+            
+            bboxes = bboxes_default
+            neg_marks = marks_default
+            add_gt = True
+            if add_gt :
+                bboxes = np.vstack([bboxes_default,bboxes_gt])
+                neg_marks = np.hstack([marks_default,marks_gt])
+                classes = np.tile(classes, 2)
+                scores = np.tile(scores,2)
             
             title = "Default boxes: Layer {}".format(g_ssd_model.feat_layers[i])
             visualization.plt_bboxes(img, classes, scores, bboxes,neg_marks=neg_marks,title=title)
@@ -127,10 +141,12 @@ class PrepareData():
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
                 
-                    for _ in range(1):
+                    for i in range(3):
+                       
                         image_data, shape_data, glabels_data, gbboxes_data,target_labels_data, target_localizations_data, target_scores_data = sess.run([image, shape, glabels, gbboxes,target_labels, target_localizations, target_scores])
 
-                    
+                        if i !=2 :
+                            continue
                         self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
                         self.__disp_gt_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                         

@@ -65,9 +65,24 @@ class SSD():
         self.__anchors = None
         
         return
-    def get_all_anchors(self):
+    def get_all_anchors(self, minmaxformat=False):
         if self.__anchors is not None:
-            return self.__anchors
+            if not minmaxformat:
+                return self.__anchors
+            else:
+                anchors_alll_ayers = []
+                for i, anchors_layer in enumerate(self.__anchors):
+                    anchors = np.zeros_like(anchors_layer)
+                    cx = anchors_layer[...,0]
+                    cy = anchors_layer[...,1]
+                    w = anchors_layer[...,2]
+                    h = anchors_layer[...,3]
+                    anchors[..., 0] = cy - h / 2.
+                    anchors[..., 1] = cx - w / 2.
+                    anchors[..., 2] = cy + h / 2.
+                    anchors[..., 3] = cx + w / 2. 
+                    anchors_alll_ayers.append(anchors)
+                return anchors_alll_ayers
         anchors = self.ssd_anchors_all_layers()
         self.__anchors = []
         for _, anchors_layer in enumerate(anchors):
@@ -76,12 +91,14 @@ class SSD():
             xmin = xref - wref / 2.
             ymax = yref + href / 2.
             xmax = xref + wref / 2.
+            
             # Transform to center / size.
             cy = ((ymax + ymin) / 2.)[...,np.newaxis]
             cx = ((xmax + xmin) / 2.)[...,np.newaxis]
             h = (ymax - ymin)[...,np.newaxis]
             w = (xmax - xmin)[...,np.newaxis]
             temp_achors = np.concatenate([cx,cy,w,h], axis = -1)
+           
             #append achors for this layer
             self.__anchors.append(temp_achors)
        
