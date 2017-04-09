@@ -85,7 +85,7 @@ class PrepareData():
         scores =np.full(classes.shape, 1.0)
         visualization.plt_bboxes(img, classes, scores, bboxes,title='Ground Truth')
         return
-    def __disp_gt_anchors(self,img, target_labels_data, target_localizations_data, target_scores_data):
+    def __disp_matched_anchors(self,img, target_labels_data, target_localizations_data, target_scores_data):
         all_anchors = g_ssd_model.get_all_anchors()
         for i, target_score_data in enumerate(target_scores_data):
 
@@ -94,14 +94,14 @@ class PrepareData():
                 continue
             print('Found  {} matched default boxes in layer {}'.format(num_pos,g_ssd_model.feat_layers[i]))
             pos_sample_inds = (target_score_data > 0.5).nonzero()
-            pos_sample_inds_2 = [pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
+            pos_sample_inds = [pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
 
-            classes = target_labels_data[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
-            scores = target_scores_data[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
-            bboxes_default= g_ssd_model.get_all_anchors(minmaxformat=True)[i][pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
+            classes = target_labels_data[i][pos_sample_inds]
+            scores = target_scores_data[i][pos_sample_inds]
+            bboxes_default= g_ssd_model.get_all_anchors(minmaxformat=True)[i][pos_sample_inds]
             
-            bboxes_gt = g_ssd_model.ssd_bboxes_decode(target_localizations_data[i][pos_sample_inds_2], 
-                                       all_anchors[i][pos_sample_inds_2])
+            bboxes_gt = g_ssd_model.ssd_bboxes_decode(target_localizations_data[i][pos_sample_inds], 
+                                       all_anchors[i][pos_sample_inds])
             
             marks_default = np.full(classes.shape, True)
             marks_gt = np.full(classes.shape, False)
@@ -148,7 +148,7 @@ class PrepareData():
                         if i !=2 :
                             continue
                         self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
-                        self.__disp_gt_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
+                        self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                         
         
         plt.show()

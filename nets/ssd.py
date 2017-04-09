@@ -63,6 +63,8 @@ class SSD():
         # all of the computed anchors for this model, 
         # format: layer_number, numpy array format for x / y / w / h
         self.__anchors = None
+        #format: layer number, numpy format for ymin,xmin,ymax,xmax
+        self.__anchors_minmax = None
         
         return
     def get_all_anchors(self, minmaxformat=False):
@@ -70,7 +72,10 @@ class SSD():
             if not minmaxformat:
                 return self.__anchors
             else:
-                anchors_alll_ayers = []
+                if self.__anchors_minmax is not None:
+                    return self.__anchors_minmax
+                num_anchors = 0
+                self.__anchors_minmax = []
                 for i, anchors_layer in enumerate(self.__anchors):
                     anchors = np.zeros_like(anchors_layer)
                     cx = anchors_layer[...,0]
@@ -81,8 +86,10 @@ class SSD():
                     anchors[..., 1] = cx - w / 2.
                     anchors[..., 2] = cy + h / 2.
                     anchors[..., 3] = cx + w / 2. 
-                    anchors_alll_ayers.append(anchors)
-                return anchors_alll_ayers
+                    num_anchors = num_anchors + anchors.size
+                    self.__anchors_minmax.append(anchors)
+                print("Anchor numbers: {}".format(num_anchors))
+                return self.__anchors_minmax
         anchors = self.ssd_anchors_all_layers()
         self.__anchors = []
         for _, anchors_layer in enumerate(anchors):
