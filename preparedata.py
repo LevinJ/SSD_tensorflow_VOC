@@ -9,27 +9,37 @@ import cv2
 from utility import visualization
 from nets.ssd import g_ssd_model
 from preprocessing.ssd_vgg_preprocessing import np_image_unwhitened
+from preprocessing.ssd_vgg_preprocessing import preprocess_for_train
+from preprocessing.ssd_vgg_preprocessing import preprocess_for_eval
 
 
 
 class PrepareData():
     def __init__(self):
-        self.dataset_name = 'flowers'
-        self.dataset_split_name = 'train'
-        self.dataset_dir = '/home/levin/workspace/detection/data/flower'
+        self.dataset_name = None
+        self.dataset_split_name = None
+        self.dataset_dir = None
         
         self.num_readers = 4
         self.batch_size = 32
         self.labels_offset = 0
-        self.train_image_size = None
-        self.model_name = 'inception_v3' #'The name of the architecture to train.'
+        
+        self.model_name = None #'The name of the architecture to train.'
         self.weight_decay = 0.00004 # 'The weight decay on the model weights.'
         
         self.preprocessing_name = None
         self.num_preprocessing_threads = 4
+        self.is_training_data = True
         
         
         return
+    def __preprocess_data(self, image, labels, bboxes):
+        out_shape = g_ssd_model.img_shape
+        if self.is_training_data:
+            image, labels, bboxes = preprocess_for_train(image, labels, bboxes, out_shape = out_shape)
+        else:
+            image, labels, bboxes, _ = preprocess_for_eval(image, labels, bboxes, out_shape = out_shape)
+        return image, labels, bboxes
     def __get_images_labels_bboxes(self):
         dataset = dataset_factory.get_dataset(
                 self.dataset_name, self.dataset_split_name, self.dataset_dir)
@@ -47,13 +57,9 @@ class PrepareData():
                                                          'object/bbox'])
         glabels -= self.labels_offset
         
-        # Select the preprocessing function.
-        preprocessing_name = g_ssd_model.model_name
-        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-            preprocessing_name, is_training=True)
+        
         # Pre-processing image, labels and bboxes.
-        image, glabels, gbboxes = \
-            image_preprocessing_fn(image, glabels, gbboxes, g_ssd_model.img_shape)
+        image, glabels, gbboxes = self.__preprocess_data(image, glabels, gbboxes)
         
 #         network_fn = nets_factory.get_network_fn(
 #                 self.model_name,
@@ -125,38 +131,58 @@ class PrepareData():
             
             
         return
+    def get_voc_2007_train_data(self):
+        self.dataset_name = 'pascalvoc_2007'
+        self.dataset_split_name = 'train'
+        self.dataset_dir = '../data/voc/tfrecords/'
+        
+        return self.__get_images_labels_bboxes()
+    
+    def get_voc_2012_train_data(self):
+        self.dataset_name = 'pascalvoc_2012'
+        self.dataset_split_name = 'train'
+        self.dataset_dir = '../data/voc/tfrecords/'
+        
+        return self.__get_images_labels_bboxes()
+    def get_voc_2007_test_data(self):
+        self.dataset_name = 'pascalvoc_2007'
+        self.dataset_split_name = 'test'
+        self.dataset_dir = '../data/voc/tfrecords/'
+        self.is_training_data = False
+        
+        return self.__get_images_labels_bboxes()
+        
     
     def run(self):
        
         #fine tune the new parameters
         self.train_dir = './logs/'
         
-        self.dataset_name = 'pascalvoc_2007'
-        self.dataset_split_name = 'train'
-        self.dataset_dir = '../data/voc/tfrecords/'
+        
         self.model_name = 'ssd'
         
         
         
         with tf.Graph().as_default():
-            image, shape, glabels, gbboxes,target_labels, target_localizations, target_scores = self.__get_images_labels_bboxes()
+            batch_voc_2007_train = self.get_voc_2007_train_data()
+            batch_voc_2007_test = self.get_voc_2007_test_data()
+            batch_voc_2012_train = self.get_voc_2012_train_data()
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
-                
-                    for i in range(3):
+                    for i in range(1):
+                        for current_data in [batch_voc_2007_test]:
                        
-                        image_data, shape_data, glabels_data, gbboxes_data,target_labels_data, target_localizations_data, target_scores_data = sess.run([image, shape, glabels, gbboxes,target_labels, target_localizations, target_scores])
-
-                        if i !=2 :
-                            continue
-                        image_data = np_image_unwhitened(image_data)
-                        self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
-                        self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
+                            image_data, shape_data, glabels_data, gbboxes_data,target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
+    
+                            image_data = np_image_unwhitened(image_data)
+                            self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
+                            self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
+                            plt.show()
                         
         
-        plt.show()
+        
         
         return
     

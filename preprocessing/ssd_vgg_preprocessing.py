@@ -230,7 +230,7 @@ def distorted_bounding_box_crop(image,
 
 
 def preprocess_for_train(image, labels, bboxes,
-                         out_shape, data_format='NHWC',
+                         out_shape=EVAL_SIZE, data_format='NHWC',
                          scope='ssd_preprocessing_train'):
     """Preprocesses the given image for training.
 
