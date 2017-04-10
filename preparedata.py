@@ -24,11 +24,7 @@ class PrepareData():
         self.num_readers = 4
         self.batch_size = 32
         self.labels_offset = 0
-        
-        self.model_name = None #'The name of the architecture to train.'
-        self.weight_decay = 0.00004 # 'The weight decay on the model weights.'
-        
-        self.preprocessing_name = None
+      
         self.num_preprocessing_threads = 4
         self.is_training_data = True
         
@@ -170,14 +166,6 @@ class PrepareData():
         
     
     def run(self):
-       
-        #fine tune the new parameters
-        self.train_dir = './logs/'
-        
-        
-        self.model_name = 'ssd'
-        
-        
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
@@ -188,7 +176,7 @@ class PrepareData():
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
                     while True:
-                        for current_data in [batch_voc_2012_train]:
+                        for current_data in [batch_voc_2007_test]:
                             
                             if len(current_data) == 7:
                                 #for evalusyion data,we take a bit more data for each batch
