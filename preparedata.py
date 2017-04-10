@@ -11,6 +11,7 @@ from nets.ssd import g_ssd_model
 from preprocessing.ssd_vgg_preprocessing import np_image_unwhitened
 from preprocessing.ssd_vgg_preprocessing import preprocess_for_train
 from preprocessing.ssd_vgg_preprocessing import preprocess_for_eval
+import tf_utils
 
 
 
@@ -68,25 +69,31 @@ class PrepareData():
 #                 is_training=True)
 
         # Assign groundtruth information for all default/anchor boxes
-        target_labels, target_localizations, target_scores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
-#         batch_shape = [1] + [len(ssd_anchors)] * 3  
-#         images, labels = tf.train.batch(
-#                 [image, label],
-#                 batch_size=self.batch_size,
-#                 num_threads=self.num_preprocessing_threads,
-#                 capacity=5 * self.batch_size)
-#         labels = slim.one_hot_encoding(
-#                 labels, dataset.num_classes - self.labels_offset)
-#         batch_queue = slim.prefetch_queue.prefetch_queue(
-#                 [images, labels], capacity=2)
-#         images, labels = batch_queue.dequeue()
+        gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
+        
+        #tf.train.batch accepts only list of tensors, this batch shape can used to
+        #flatten the list in list, and later on convet it back to list in list.
+        batch_shape = [1] + [len(gclasses), len(glocalisations), len(gscores)]
+        #Batch the samples
+        batch = tf.train.batch(
+                tf_utils.reshape_list([image, gclasses, glocalisations, gscores]),
+                batch_size=self.batch_size,
+                num_threads=self.num_preprocessing_threads,
+                capacity=5 * self.batch_size)
+
+        batch_queue = slim.prefetch_queue.prefetch_queue(
+                batch, capacity=2)
+        batch_queue_dequed = batch_queue.dequeue()
+        
+        #convert it back to the list in list format which allows us to easily use later on
+        batch_queue_dequed= tf_utils.reshape_list(batch_queue_dequed, batch_shape)
 #         
 #         self.network_fn = network_fn
 #         self.dataset = dataset
         
         #set up the network
         
-        return image, shape, glabels, gbboxes,target_labels, target_localizations, target_scores
+        return batch_queue_dequed
     def __disp_image(self, img, shape_data, classes, bboxes):
         scores =np.full(classes.shape, 1.0)
         visualization.plt_bboxes(img, classes, scores, bboxes,title='Ground Truth')
@@ -115,6 +122,7 @@ class PrepareData():
             
             marks_default = np.full(classes.shape, True)
             marks_gt = np.full(classes.shape, False)
+            scores_gt = np.full(scores.shape, 1.0)
             
             bboxes = bboxes_default
             neg_marks = marks_default
@@ -123,7 +131,7 @@ class PrepareData():
                 bboxes = np.vstack([bboxes_default,bboxes_gt])
                 neg_marks = np.hstack([marks_default,marks_gt])
                 classes = np.tile(classes, 2)
-                scores = np.tile(scores,2)
+                scores = np.hstack([scores, scores_gt])
             
             title = "Default boxes: Layer {}".format(g_ssd_model.feat_layers[i])
             visualization.plt_bboxes(img, classes, scores, bboxes,neg_marks=neg_marks,title=title)
@@ -174,10 +182,17 @@ class PrepareData():
                     for i in range(1):
                         for current_data in [batch_voc_2007_test]:
                        
-                            image_data, shape_data, glabels_data, gbboxes_data,target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
+                            image_data, target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
+                            
+                            
+                            #selet the first image in the batch
+                            target_labels_data = [item[0] for item in target_labels_data]
+                            target_localizations_data = [item[0] for item in target_localizations_data]
+                            target_scores_data = [item[0] for item in target_scores_data]
+                            image_data = image_data[0]
     
                             image_data = np_image_unwhitened(image_data)
-                            self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
+#                             self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
                             self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                             plt.show()
                         
