@@ -47,7 +47,7 @@ class PrepareData():
         
         provider = slim.dataset_data_provider.DatasetDataProvider(
                     dataset,
-                    shuffle=True,
+                    shuffle=self.is_training_data,
                     num_readers=self.num_readers,
                     common_queue_capacity=20 * self.batch_size,
                     common_queue_min=10 * self.batch_size)
