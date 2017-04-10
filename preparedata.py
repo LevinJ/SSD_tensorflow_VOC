@@ -53,52 +53,61 @@ class PrepareData():
                     common_queue_min=10 * self.batch_size)
         
         # Get for SSD network: image, labels, bboxes.
-        [image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
+        [image, shape, glabels, gbboxes,gdifficults] = provider.get(['image', 'shape',
                                                          'object/label',
-                                                         'object/bbox'])
+                                                         'object/bbox',
+                                                         'object/difficult'])
         glabels -= self.labels_offset
         
         
         # Pre-processing image, labels and bboxes.
         image, glabels, gbboxes = self.__preprocess_data(image, glabels, gbboxes)
-        
-#         network_fn = nets_factory.get_network_fn(
-#                 self.model_name,
-#                 num_classes=(dataset.num_classes - self.labels_offset),
-#                 weight_decay=self.weight_decay,
-#                 is_training=True)
 
         # Assign groundtruth information for all default/anchor boxes
         gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
         
+        
+        return self.__batching_data(image, glabels, gbboxes, gdifficults,gclasses, glocalisations, gscores)
+    def __batching_data(self,image, glabels, gbboxes, gdifficults,gclasses, glocalisations, gscores):
+        
+       
+        #Batch the samples
+        if self.is_training_data:
+            
+            dynamic_pad = False
+            batch_shape = [1] + [len(gclasses), len(glocalisations), len(gscores)]
+            tensors = [image, gclasses, glocalisations, gscores]
+        else:
+            #in the case of evaluatation data, we will want to batch original glabels and gbboxes
+            #this information is still useful even if they are padded after dequeuing
+            dynamic_pad = True
+            batch_shape = [1,1,1,1] + [len(gclasses), len(glocalisations), len(gscores)]
+            tensors = [image, glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
+            
         #tf.train.batch accepts only list of tensors, this batch shape can used to
         #flatten the list in list, and later on convet it back to list in list.
-        batch_shape = [1] + [len(gclasses), len(glocalisations), len(gscores)]
-        #Batch the samples
         batch = tf.train.batch(
-                tf_utils.reshape_list([image, gclasses, glocalisations, gscores]),
+                tf_utils.reshape_list(tensors),
                 batch_size=self.batch_size,
                 num_threads=self.num_preprocessing_threads,
+                dynamic_pad=dynamic_pad,
                 capacity=5 * self.batch_size)
-
-        batch_queue = slim.prefetch_queue.prefetch_queue(
-                batch, capacity=2)
-        batch_queue_dequed = batch_queue.dequeue()
         
+        if self.is_training_data:
+            #speed up batch featching during training
+            batch = slim.prefetch_queue.prefetch_queue(
+                    batch, capacity=2)
+            batch = batch.dequeue()
+            
         #convert it back to the list in list format which allows us to easily use later on
-        batch_queue_dequed= tf_utils.reshape_list(batch_queue_dequed, batch_shape)
-#         
-#         self.network_fn = network_fn
-#         self.dataset = dataset
-        
-        #set up the network
-        
-        return batch_queue_dequed
+        batch= tf_utils.reshape_list(batch, batch_shape)
+        return batch
     def __disp_image(self, img, shape_data, classes, bboxes):
         scores =np.full(classes.shape, 1.0)
         visualization.plt_bboxes(img, classes, scores, bboxes,title='Ground Truth')
         return
     def __disp_matched_anchors(self,img, target_labels_data, target_localizations_data, target_scores_data):
+        found_matched = False
         all_anchors = g_ssd_model.get_all_anchors()
         for i, target_score_data in enumerate(target_scores_data):
 
@@ -135,10 +144,9 @@ class PrepareData():
             
             title = "Default boxes: Layer {}".format(g_ssd_model.feat_layers[i])
             visualization.plt_bboxes(img, classes, scores, bboxes,neg_marks=neg_marks,title=title)
-                
+            found_matched = True  
             
-            
-        return
+        return found_matched
     def get_voc_2007_train_data(self):
         self.dataset_name = 'pascalvoc_2007'
         self.dataset_split_name = 'train'
@@ -179,10 +187,14 @@ class PrepareData():
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
-                    for i in range(1):
-                        for current_data in [batch_voc_2007_test]:
-                       
-                            image_data, target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
+                    while True:
+                        for current_data in [batch_voc_2012_train]:
+                            
+                            if len(current_data) == 7:
+                                #for evalusyion data,we take a bit more data for each batch
+                                image_data, glabels_data,gbboxes_data,gdifficults_data, target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
+                            else:
+                                image_data, target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
                             
                             
                             #selet the first image in the batch
@@ -193,8 +205,12 @@ class PrepareData():
     
                             image_data = np_image_unwhitened(image_data)
 #                             self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
-                            self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
+                            found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                             plt.show()
+                        #exit the batch data testing right after a successful match have been found
+                        if found_matched:
+                                break
+                            
                         
         
         
