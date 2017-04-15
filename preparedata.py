@@ -41,6 +41,8 @@ class PrepareData():
         dataset = dataset_factory.get_dataset(
                 self.dataset_name, self.dataset_split_name, self.dataset_dir)
         
+        self.dataset = dataset
+        
         provider = slim.dataset_data_provider.DatasetDataProvider(
                     dataset,
                     shuffle=self.is_training_data,

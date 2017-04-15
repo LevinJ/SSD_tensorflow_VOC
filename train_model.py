@@ -37,13 +37,17 @@ class TrainModel(PrepareData):
         
         self.train_dir = '/tmp/tfmodel/'
         self.max_number_of_steps = None
-        self.log_every_n_steps = 10
-        self.save_summaries_secs = 600
-        self.save_interval_secs= 600
+
         
         self.checkpoint_path = None
         self.checkpoint_exclude_scopes = None
         self.ignore_missing_vars = False
+        
+        self.batch_size= 32
+        
+        self.save_interval_secs = 600
+        self.save_summaries_secs= 60
+#         self.log_every_n_steps = 100
         
         
         
@@ -164,7 +168,7 @@ class TrainModel(PrepareData):
         image, gclasses, glocalisations, gscores = self.get_voc_2007_train_data()
         
         #get model outputs
-        predictions, localisations, logits, end_points = g_ssd_model.get_model(image)
+        predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay)
         
         #get model training losss
         total_loss = g_ssd_model.get_losses(logits, localisations, gclasses, glocalisations, gscores)
@@ -274,17 +278,19 @@ class TrainModel(PrepareData):
         
         
         self.checkpoint_path = '../data/trained_models/vgg16/vgg_16.ckpt'
-        self.checkpoint_exclude_scopes = 'ssd_300_vgg/additional_blocks'
-        self.trainable_scopes = 'ssd_300_vgg/additional_blocks'
+        self.checkpoint_exclude_scopes = g_ssd_model.model_name
+        self.trainable_scopes = g_ssd_model.model_name
+        
+        
         self.max_number_of_steps = 1000
-        self.batch_size= 32
+        self.log_every_n_steps = 100
+        
         self.learning_rate = 0.001
         self.learning_rate_decay_type = 'fixed'
-        self.save_interval_secs = 600
-        self.save_summaries_secs= 60
-        self.log_every_n_steps = 100
+        
+        
         self.optimizer = 'adam'
-        self.weight_decay = 0.00005
+        self.weight_decay = 0.0005 # for model regularization
         
         #fine tune all parameters
 #         self.train_dir = '/tmp/flowers-models/inception_v3/all'
