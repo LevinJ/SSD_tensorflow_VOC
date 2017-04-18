@@ -329,7 +329,7 @@ class SSDModel():
                                             select_threshold=self.select_threshold,
                                             num_classes=self.num_classes)
         rscores, rbboxes = \
-            tfe.bboxes_sort(rscores, rbboxes, top_k=self.top_k)
+            tfe.bboxes_sort(rscores, rbboxes, top_k=self.select_top_k)
         # Apply NMS algorithm.
         rscores, rbboxes = \
             tfe.bboxes_nms_batch(rscores, rbboxes,
