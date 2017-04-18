@@ -8,7 +8,8 @@ import numpy as np
 import math
 from numpy import newaxis
 from nets import custom_layers
-
+import tf_extended as tfe
+from nets import ssd_common
 
 
 class SSDModel():
@@ -66,6 +67,12 @@ class SSDModel():
         #format: layer number, numpy format for ymin,xmin,ymax,xmax
         self.__anchors_minmax = None
         self.model_name = 'ssd_300_vgg'
+        
+        #post processing
+        self.select_threshold = 0.01
+        self.nms_threshold = 0.45
+        self.select_top_k = 400
+        self.keep_top_k = 200
         
         return
     def __additional_ssd_block(self, end_points, net):
@@ -312,19 +319,47 @@ class SSDModel():
             self.__anchors.append(temp_achors)
        
         return self.__anchors
-    def ssd_bboxes_decode(self, feat_localizations,anchors):
-        """Compute the relative bounding boxes from the layer features and
-        corresponding reference anchor bounding boxes.
-        Here we assume all the elements in feat_localizations are from the same layer, 
-        otherwise the numpy slicing below won't work
+    def detected_bboxes(self, predictions, localisations,
+                        clipping_bbox=None):
+        """Get the detected bounding boxes from the SSD network output.
+        """
+        # Select top_k bboxes from predictions, and clip
+        rscores, rbboxes = \
+            ssd_common.tf_ssd_bboxes_select(predictions, localisations,
+                                            select_threshold=self.select_threshold,
+                                            num_classes=self.num_classes)
+        rscores, rbboxes = \
+            tfe.bboxes_sort(rscores, rbboxes, top_k=self.top_k)
+        # Apply NMS algorithm.
+        rscores, rbboxes = \
+            tfe.bboxes_nms_batch(rscores, rbboxes,
+                                 nms_threshold=self.nms_threshold,
+                                 keep_top_k=self.keep_top_k)
+        if clipping_bbox is not None:
+            rbboxes = tfe.bboxes_clip(clipping_bbox, rbboxes)
+        return rscores, rbboxes
+    def decode_bboxes_all_ayers_tf(self, feat_localizations):
+        """convert ssd boxes from relative to input image anchors to relative to input width/height
     
         Return:
-          numpy array Nx4: ymin, xmin, ymax, xmax
+          numpy array NlayersxNx4: ymin, xmin, ymax, xmax
+        """
+        anchors = self.ssd_anchors_all_layers()
+        return ssd_common.tf_ssd_bboxes_decode(
+            feat_localizations, anchors,
+            prior_scaling=self.prior_scaling)
+        
+    def decode_bboxes_layer(self, feat_localizations,anchors):
+        """convert ssd boxes from relative to input image anchors to relative to 
+        input width/height, for one signle feature layer
+    
+        Return:
+          numpy array BatchesxHxWx4: ymin, xmin, ymax, xmax
         """
 
         l_shape = feat_localizations.shape
-        if feat_localizations.shape != anchors.shape:
-            raise "feat_localizations and anchors should be of identical shape, and corresond to each other"
+#         if feat_localizations.shape != anchors.shape:
+#             raise "feat_localizations and anchors should be of identical shape, and corresond to each other"
         
         # Reshape for easier broadcasting.
         feat_localizations = feat_localizations[np.newaxis,:]

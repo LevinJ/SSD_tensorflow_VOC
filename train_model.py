@@ -282,7 +282,7 @@ class TrainModel(PrepareData):
         self.trainable_scopes = g_ssd_model.model_name
         
         
-        self.max_number_of_steps = 1000
+        self.max_number_of_steps = 5000
         self.log_every_n_steps = 100
         
         self.learning_rate = 0.001

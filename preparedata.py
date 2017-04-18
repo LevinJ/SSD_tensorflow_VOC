@@ -122,7 +122,7 @@ class PrepareData():
             
             
             
-            bboxes_gt = g_ssd_model.ssd_bboxes_decode(target_localizations_data[i][pos_sample_inds], 
+            bboxes_gt = g_ssd_model.decode_bboxes_layer(target_localizations_data[i][pos_sample_inds], 
                                        all_anchors[i][pos_sample_inds])
             
             print("default box minimum, {} gt box minimum, {}".format(bboxes_default.min(), bboxes_gt.min()))
