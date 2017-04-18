@@ -75,6 +75,7 @@ def get_split(split_name, dataset_dir, file_pattern, reader,
     keys_to_features = {
         'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
         'image/format': tf.FixedLenFeature((), tf.string, default_value='jpeg'),
+        'image/filename': tf.FixedLenFeature((), tf.string, default_value='000000'),
         'image/height': tf.FixedLenFeature([1], tf.int64),
         'image/width': tf.FixedLenFeature([1], tf.int64),
         'image/channels': tf.FixedLenFeature([1], tf.int64),
@@ -94,7 +95,9 @@ def get_split(split_name, dataset_dir, file_pattern, reader,
                 ['xmin', 'ymin', 'xmax', 'ymax'], 'image/object/bbox/'),
         'object/label': slim.tfexample_decoder.Tensor('image/object/bbox/label'),
         'object/difficult': slim.tfexample_decoder.Tensor('image/object/bbox/difficult'),
-        'object/truncated': slim.tfexample_decoder.Tensor('image/object/bbox/truncated')
+        'object/truncated': slim.tfexample_decoder.Tensor('image/object/bbox/truncated'),
+        'format': slim.tfexample_decoder.Tensor('image/format'),
+        'filename': slim.tfexample_decoder.Tensor('image/filename')
     }
     decoder = slim.tfexample_decoder.TFExampleDecoder(
         keys_to_features, items_to_handlers)

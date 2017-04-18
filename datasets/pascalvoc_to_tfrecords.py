@@ -121,7 +121,7 @@ def _process_image(directory, name):
 
 
 def _convert_to_example(image_data, labels, labels_text, bboxes, shape,
-                        difficult, truncated):
+                        difficult, truncated,name):
     """Build an Example proto for an image example.
 
     Args:
@@ -160,6 +160,7 @@ def _convert_to_example(image_data, labels, labels_text, bboxes, shape,
             'image/object/bbox/difficult': int64_feature(difficult),
             'image/object/bbox/truncated': int64_feature(truncated),
             'image/format': bytes_feature(image_format),
+            'image/filename': bytes_feature(name.encode('utf-8')),
             'image/encoded': bytes_feature(image_data)}))
     return example
 
@@ -175,7 +176,7 @@ def _add_to_tfrecord(dataset_dir, name, tfrecord_writer):
     image_data, shape, bboxes, labels, labels_text, difficult, truncated = \
         _process_image(dataset_dir, name)
     example = _convert_to_example(image_data, labels, labels_text,
-                                  bboxes, shape, difficult, truncated)
+                                  bboxes, shape, difficult, truncated,name)
     tfrecord_writer.write(example.SerializeToString())
 
 

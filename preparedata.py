@@ -21,7 +21,6 @@ class PrepareData():
         self.dataset_split_name = None
         self.dataset_dir = None
         
-        self.num_readers = 4
         self.batch_size = 32
         self.labels_offset = 0
       
@@ -43,15 +42,26 @@ class PrepareData():
         
         self.dataset = dataset
         
+        if self.is_training_data:
+            
+            shuffle = True
+            #make sure most samples can be fetched in one epoch
+            self.num_readers = 1
+        else:
+            #make sure data is fetchd in sequence
+            shuffle = False
+            self.num_readers = 1
+            
+        
         provider = slim.dataset_data_provider.DatasetDataProvider(
                     dataset,
-                    shuffle=self.is_training_data,
+                    shuffle=shuffle,
                     num_readers=self.num_readers,
                     common_queue_capacity=20 * self.batch_size,
                     common_queue_min=10 * self.batch_size)
         
         # Get for SSD network: image, labels, bboxes.
-        [image, shape, glabels, gbboxes,gdifficults] = provider.get(['image', 'shape',
+        [image, shape, format, filename, glabels, gbboxes,gdifficults] = provider.get(['image', 'shape', 'format','filename',
                                                          'object/label',
                                                          'object/bbox',
                                                          'object/difficult'])
@@ -65,22 +75,25 @@ class PrepareData():
         gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
         
         
-        return self.__batching_data(image, glabels, gbboxes, gdifficults,gclasses, glocalisations, gscores)
-    def __batching_data(self,image, glabels, gbboxes, gdifficults,gclasses, glocalisations, gscores):
+        return self.__batching_data(image, glabels, format, filename, gbboxes, gdifficults, gclasses, glocalisations, gscores)
+    def __batching_data(self,image, glabels, format, filename, gbboxes, gdifficults,gclasses, glocalisations, gscores):
         
        
         #Batch the samples
         if self.is_training_data:
             
             dynamic_pad = False
-            batch_shape = [1] + [len(gclasses), len(glocalisations), len(gscores)]
-            tensors = [image, gclasses, glocalisations, gscores]
+            batch_shape = [1,1] + [len(gclasses), len(glocalisations), len(gscores)]
+            tensors = [image, filename, gclasses, glocalisations, gscores]
         else:
             #in the case of evaluatation data, we will want to batch original glabels and gbboxes
             #this information is still useful even if they are padded after dequeuing
             dynamic_pad = True
-            batch_shape = [1,1,1,1] + [len(gclasses), len(glocalisations), len(gscores)]
-            tensors = [image, glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
+            batch_shape = [1,1,1,1,1] + [len(gclasses), len(glocalisations), len(gscores)]
+            tensors = [image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
+            
+            # to make sure data is fectched in sequence during evaluation
+            self.num_preprocessing_threads = 1
             
         #tf.train.batch accepts only list of tensors, this batch shape can used to
         #flatten the list in list, and later on convet it back to list in list.
@@ -165,9 +178,24 @@ class PrepareData():
         self.is_training_data = False
         
         return self.__get_images_labels_bboxes()
-        
     
+        
+    def iterate_file_name(self):
+        with tf.Graph().as_default():
+            tensors_to_run = self.get_voc_2012_train_data()
+            with tf.Session('') as sess:
+                init = tf.global_variables_initializer()
+                sess.run(init)
+                with slim.queues.QueueRunners(sess):
+                    for i in range(100):
+                        #test evaluation
+#                         image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(tensors_to_run))
+                        #test training
+                        image, filename, gclasses, glocalisations, gscores = sess.run(list(tensors_to_run))
+                        print(filename)
+        return
     def run(self):
+#         return self.iterate_file_name()
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
@@ -176,23 +204,24 @@ class PrepareData():
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
-                with slim.queues.QueueRunners(sess):
+                with slim.queues.QueueRunners(sess):  
                     while True:
-                        for current_data in [batch_voc_2007_test]:
-                            
-                            if len(current_data) == 7:
+                        for current_data in [batch_voc_2012_train]:
+                             
+                            if len(current_data) == 8:
                                 #for evalusyion data,we take a bit more data for each batch
-                                image_data, glabels_data,gbboxes_data,gdifficults_data, target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
+                                image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(current_data))
                             else:
-                                image_data, target_labels_data, target_localizations_data, target_scores_data = sess.run(list(current_data))
-                            
-                            
+                                image, filename, gclasses, glocalisations, gscores = sess.run(list(current_data))
+                            print(filename)
+                             
+                             
                             #selet the first image in the batch
-                            target_labels_data = [item[0] for item in target_labels_data]
-                            target_localizations_data = [item[0] for item in target_localizations_data]
-                            target_scores_data = [item[0] for item in target_scores_data]
-                            image_data = image_data[0]
-    
+                            target_labels_data = [item[0] for item in gclasses]
+                            target_localizations_data = [item[0] for item in glocalisations]
+                            target_scores_data = [item[0] for item in gscores]
+                            image_data = image[0]
+     
                             image_data = np_image_unwhitened(image_data)
 #                             self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
                             found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
