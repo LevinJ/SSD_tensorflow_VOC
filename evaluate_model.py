@@ -53,7 +53,7 @@ class EvaluateModel(PrepareData):
                                           glabels, gbboxes, gdifficults)
             
         variables_to_restore = slim.get_variables_to_restore()
-        m_AP_tf = g_post_processing_data.get_mAP_tf(predictions, localisations, glabels, gbboxes, gdifficults)
+        
         
         dict_metrics = {}
         with tf.device('/device:CPU:0'):
@@ -118,6 +118,8 @@ class EvaluateModel(PrepareData):
             current_step = tf.Print(tf_global_step, [tf_global_step], 'current_step')
             tf.summary.scalar('current_step_summary', current_step)
             
+            print_mAP_07_op, print_mAP_12_op = g_post_processing_data.get_mAP_tf_current_batch(predictions, localisations, glabels, gbboxes, gdifficults)
+            
         # Split into values and updates ops.
         names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(dict_metrics)
         
@@ -140,7 +142,7 @@ class EvaluateModel(PrepareData):
             checkpoint_path=checkpoint_path,
             logdir=self.eval_dir,
             num_evals=num_batches,
-            eval_op=list(names_to_updates.values()) +[current_step],
+            eval_op=list(names_to_updates.values()) ,
             variables_to_restore=variables_to_restore)
         # Log time spent.
         elapsed = time.time()

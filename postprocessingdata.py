@@ -16,50 +16,86 @@ class PostProcessingData(object):
         
         
         return
-    def get_mAP_tf(self,predictions, localisations,glabels, gbboxes,gdifficults):
+    
+    def __compute_AP(self,c_scores,c_tp,c_fp,c_num_gbboxes):
+        aps_voc07 = {}
+        aps_voc12 = {}
+        for c in c_scores.keys():
+            num_gbboxes = c_num_gbboxes[c]
+            tp = c_tp[c]
+            fp = c_fp[c]
+            scores = c_scores[c]
+        
+            #reshape data
+            num_gbboxes = math_ops.to_int64(num_gbboxes)
+            scores = math_ops.to_float(scores)
+            stype = tf.bool
+            tp = tf.cast(tp, stype)
+            fp = tf.cast(fp, stype)
+            # Reshape TP and FP tensors and clean away 0 class values.(difficult bboxes)
+            scores = tf.reshape(scores, [-1])
+            tp = tf.reshape(tp, [-1])
+            fp = tf.reshape(fp, [-1])
+            
+            # Remove TP and FP both false.
+            mask = tf.logical_or(tp, fp)
+    
+            rm_threshold = 1e-4
+            mask = tf.logical_and(mask, tf.greater(scores, rm_threshold))
+            scores = tf.boolean_mask(scores, mask)
+            tp = tf.boolean_mask(tp, mask)
+            fp = tf.boolean_mask(fp, mask)
+            
+            num_gbboxes = tf.reduce_sum(num_gbboxes)
+            num_detections = tf.size(scores, out_type=tf.int32)
+            
+            # Precison and recall values.
+            prec, rec = tfe.precision_recall(num_gbboxes, num_detections, tp, fp, scores)
+            
+            v = tfe.average_precision_voc07(prec, rec)
+            aps_voc07[c] = v
+            
+            # Average precision VOC12.
+            v = tfe.average_precision_voc12(prec, rec)
+
+            aps_voc12[c] = v
+        return aps_voc07, aps_voc12
+    
+    def get_mAP_tf_current_batch(self,predictions, localisations,glabels, gbboxes,gdifficults):
         # Performing post-processing on CPU: loop-intensive, usually more efficient.
         with tf.device('/device:CPU:0'):
         
             # Detected objects from SSD output.
             localisations = g_ssd_model.decode_bboxes_all_ayers_tf(localisations)
-            
+            # Select via thresholding and also top_k bboxes from predictions
+            # Apply NMS algorithm.
             rscores, rbboxes = g_ssd_model.detected_bboxes(predictions, localisations)
             
             # Compute TP and FP statistics.
-            num_gbboxes, tp, fp, rscores = \
+            c_num_gbboxes, c_tp, c_fp, c_scores = \
                 tfe.bboxes_matching_batch(rscores.keys(), rscores, rbboxes,
                                           glabels, gbboxes, gdifficults)
             
-            for c in rscores.keys():
             
-                #reshape data
-                num_gbboxes = math_ops.to_int64(num_gbboxes)
-                scores = math_ops.to_float(rscores)
-                stype = tf.bool
-                tp = tf.cast(tp, stype)
-                fp = tf.cast(fp, stype)
-                # Reshape TP and FP tensors and clean away 0 class values.(difficult bboxes)
-                scores = tf.reshape(scores, [-1])
-                tp = tf.reshape(tp, [-1])
-                fp = tf.reshape(fp, [-1])
-                
-                # Remove TP and FP both false.
-                mask = tf.logical_or(tp, fp)
-        
-                rm_threshold = 1e-4
-                mask = tf.logical_and(mask, tf.greater(scores, rm_threshold))
-                scores = tf.boolean_mask(scores, mask)
-                tp = tf.boolean_mask(tp, mask)
-                fp = tf.boolean_mask(fp, mask)
-                
-                num_gbboxes = tf.reduce_sum(num_gbboxes)
-                num_detections = tf.size(scores, out_type=tf.int32)
-                
-                # Precison and recall values.
-                prec, rec = tfe.precision_recall(num_gbboxes, num_detections, tp, fp, scores)
+            aps_voc07, aps_voc12 = self.__compute_AP(c_scores, c_tp, c_fp, c_num_gbboxes)
+            # Mean average precision VOC07.
+            summary_name = 'AP_VOC07/mAP'
+            mAP = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
+#             op = tf.summary.scalar(summary_name, mAP, collections=[])
+            print_mAP_07_op = tf.Print(mAP, [mAP], summary_name)
+            tf.summary.scalar(summary_name, print_mAP_07_op)
+#             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+    
+            # Mean average precision VOC12.
+            summary_name = 'AP_VOC12/mAP'
+            mAP = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
+#             op = tf.summary.scalar(summary_name, mAP, collections=[])
+            print_mAP_12_op = tf.Print(mAP, [mAP], summary_name)
+            tf.summary.scalar(summary_name, print_mAP_12_op)
+
+
             
-            
-        return
+        return print_mAP_07_op, print_mAP_12_op
     
     
    
