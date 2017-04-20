@@ -717,7 +717,11 @@ class SSDModel():
                 tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
                 tf.add_to_collection('EXTRA_LOSSES', total_cross)
                 tf.add_to_collection('EXTRA_LOSSES', total_loc)
-        total_loss = tf.add(total_loc, total_cross, 'total_loss')
+            model_loss = tf.add(total_loc, total_cross, 'model_loss')
+            #Add regularziaton loss
+            regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+            regularization_loss = tf.add_n(regularization_losses,name='regularization_loss')
+            total_loss = tf.add(model_loss, regularization_loss, 'total_loss')
         return total_loss
    
     
