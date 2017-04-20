@@ -143,14 +143,14 @@ class PostProcessingData(object):
                 aps_voc12[c] = v
     
             # Mean average precision VOC07.
-            summary_name = 'AP_VOC07/mAP'
+            summary_name = 'AP_VOC07/mAP_accumulative'
             mAP = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
             op = tf.summary.scalar(summary_name, mAP, collections=[])
             op = tf.Print(op, [mAP], summary_name)
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
     
             # Mean average precision VOC12.
-            summary_name = 'AP_VOC12/mAP'
+            summary_name = 'AP_VOC12/mAP_accumulative'
             mAP = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
             op = tf.summary.scalar(summary_name, mAP, collections=[])
             op = tf.Print(op, [mAP], summary_name)

@@ -56,7 +56,7 @@ class EvaluateModel(PrepareData):
         
         num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
         
-        num_batches = 5
+        num_batches = 3
         
         
        
