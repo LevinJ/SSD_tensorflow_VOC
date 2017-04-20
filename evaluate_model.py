@@ -7,6 +7,7 @@ from preparedata import PrepareData
 from nets.ssd import g_ssd_model
 import tf_extended as tfe
 import time
+from postprocessingdata import g_post_processing_data
 
 
 class EvaluateModel(PrepareData):
@@ -14,7 +15,7 @@ class EvaluateModel(PrepareData):
         PrepareData.__init__(self)
         
         
-        self.batch_size = 1
+        self.batch_size = 2
         self.labels_offset = 0
         self.eval_image_size = None
         self.preprocessing_name = None
@@ -33,7 +34,7 @@ class EvaluateModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         tf_global_step = slim.get_or_create_global_step()
         
-        image, glabels,gbboxes,gdifficults, gclasses, glocalisations, gscores = self.get_voc_2007_test_data()
+        image, filename, glabels,gbboxes,gdifficults, gclasses, glocalisations, gscores = self.get_voc_2007_test_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image)
@@ -50,7 +51,9 @@ class EvaluateModel(PrepareData):
             num_gbboxes, tp, fp, rscores = \
                 tfe.bboxes_matching_batch(rscores.keys(), rscores, rbboxes,
                                           glabels, gbboxes, gdifficults)
+            
         variables_to_restore = slim.get_variables_to_restore()
+        m_AP_tf = g_post_processing_data.get_mAP_tf(predictions, localisations, glabels, gbboxes, gdifficults)
         
         dict_metrics = {}
         with tf.device('/device:CPU:0'):
@@ -112,6 +115,9 @@ class EvaluateModel(PrepareData):
             op = tf.Print(op, [mAP], summary_name)
             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
             
+            current_step = tf.Print(tf_global_step, [tf_global_step], 'current_step')
+            tf.summary.scalar('current_step_summary', current_step)
+            
         # Split into values and updates ops.
         names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(dict_metrics)
         
@@ -123,7 +129,9 @@ class EvaluateModel(PrepareData):
         
         num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
         
-        num_batches = 500
+        num_batches = 5
+        
+        
 
         # Standard evaluation loop.
         start = time.time()
@@ -132,7 +140,7 @@ class EvaluateModel(PrepareData):
             checkpoint_path=checkpoint_path,
             logdir=self.eval_dir,
             num_evals=num_batches,
-            eval_op=list(names_to_updates.values()),
+            eval_op=list(names_to_updates.values()) +[current_step],
             variables_to_restore=variables_to_restore)
         # Log time spent.
         elapsed = time.time()

@@ -161,7 +161,7 @@ def streaming_tp_fp_arrays(num_gbboxes, tp, fp, scores,
         stype = tf.bool
         tp = tf.cast(tp, stype)
         fp = tf.cast(fp, stype)
-        # Reshape TP and FP tensors and clean away 0 class values.
+        # Reshape TP and FP tensors and clean away 0 class values.(difficult bboxes)
         scores = tf.reshape(scores, [-1])
         tp = tf.reshape(tp, [-1])
         fp = tf.reshape(fp, [-1])
