@@ -24,8 +24,8 @@ class PrepareData():
         self.batch_size = 32
         self.labels_offset = 0
       
-        self.num_preprocessing_threads = 4
-        self.is_training_data = True
+        
+       
         
         
         return
@@ -78,20 +78,15 @@ class PrepareData():
         return self.__batching_data(image, glabels, format, filename, gbboxes, gdifficults, gclasses, glocalisations, gscores)
     def __batching_data(self,image, glabels, format, filename, gbboxes, gdifficults,gclasses, glocalisations, gscores):
         
-       
+        #we will want to batch original glabels and gbboxes
+        #this information is still useful even if they are padded after dequeuing
+        dynamic_pad = True
+        batch_shape = [1,1,1,1,1] + [len(gclasses), len(glocalisations), len(gscores)]
+        tensors = [image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
         #Batch the samples
         if self.is_training_data:
-            
-            dynamic_pad = False
-            batch_shape = [1,1] + [len(gclasses), len(glocalisations), len(gscores)]
-            tensors = [image, filename, gclasses, glocalisations, gscores]
+            self.num_preprocessing_threads = 4
         else:
-            #in the case of evaluatation data, we will want to batch original glabels and gbboxes
-            #this information is still useful even if they are padded after dequeuing
-            dynamic_pad = True
-            batch_shape = [1,1,1,1,1] + [len(gclasses), len(glocalisations), len(gscores)]
-            tensors = [image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
-            
             # to make sure data is fectched in sequence during evaluation
             self.num_preprocessing_threads = 1
             
@@ -103,12 +98,6 @@ class PrepareData():
                 num_threads=self.num_preprocessing_threads,
                 dynamic_pad=dynamic_pad,
                 capacity=5 * self.batch_size)
-        
-#         if self.is_training_data:
-#             #speed up batch featching during training
-#             batch = slim.prefetch_queue.prefetch_queue(
-#                     batch, capacity=2)
-#             batch = batch.dequeue()
             
         #convert it back to the list in list format which allows us to easily use later on
         batch= tf_utils.reshape_list(batch, batch_shape)
@@ -192,14 +181,12 @@ class PrepareData():
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
                     for i in range(2):
-                        #test evaluation
-                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_test))
-                        #test training
-#                         image, filename, gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_test))
+                        
+                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_train))
                         print(filename)
         return
     def run(self):
-        return self.iterate_file_name()
+#         return self.iterate_file_name()
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
@@ -212,11 +199,9 @@ class PrepareData():
                     while True:
                         for current_data in [batch_voc_2012_train]:
                              
-                            if len(current_data) == 8:
-                                #for evalusyion data,we take a bit more data for each batch
-                                image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(current_data))
-                            else:
-                                image, filename, gclasses, glocalisations, gscores = sess.run(list(current_data))
+                            
+                            image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(current_data))
+                           
                             print(filename)
                              
                              
