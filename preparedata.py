@@ -17,9 +17,6 @@ import tf_utils
 
 class PrepareData():
     def __init__(self):
-        self.dataset_name = None
-        self.dataset_split_name = None
-        self.dataset_dir = None
         
         self.batch_size = 32
         self.labels_offset = 0
@@ -46,7 +43,7 @@ class PrepareData():
             
             shuffle = True
             #make sure most samples can be fetched in one epoch
-            self.num_readers = 4
+            self.num_readers = 1
         else:
             #make sure data is fetchd in sequence
             shuffle = False
@@ -57,7 +54,7 @@ class PrepareData():
                     dataset,
                     shuffle=shuffle,
                     num_readers=self.num_readers,
-                    common_queue_capacity=20 * self.batch_size,
+                    common_queue_capacity=30 * self.batch_size,
                     common_queue_min=10 * self.batch_size)
         
         # Get for SSD network: image, labels, bboxes.
@@ -85,7 +82,7 @@ class PrepareData():
         tensors = [image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
         #Batch the samples
         if self.is_training_data:
-            self.num_preprocessing_threads = 4
+            self.num_preprocessing_threads = 1
         else:
             # to make sure data is fectched in sequence during evaluation
             self.num_preprocessing_threads = 1
@@ -180,13 +177,13 @@ class PrepareData():
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
-                    for i in range(2):
+                    for i in range(155):
                         
-                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_train))
+                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_test))
                         print(filename)
         return
     def run(self):
-#         return self.iterate_file_name()
+        return self.iterate_file_name()
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
