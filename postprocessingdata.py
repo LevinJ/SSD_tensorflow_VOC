@@ -97,6 +97,69 @@ class PostProcessingData(object):
             
         return print_mAP_07_op, print_mAP_12_op
     
+    def get_mAP_tf_accumulative(self,predictions, localisations,glabels, gbboxes,gdifficults):
+        # Performing post-processing on CPU: loop-intensive, usually more efficient.
+        with tf.device('/device:CPU:0'):
+        
+            # Detected objects from SSD output.
+            localisations = g_ssd_model.decode_bboxes_all_ayers_tf(localisations)
+            
+            rscores, rbboxes = g_ssd_model.detected_bboxes(predictions, localisations)
+            
+            # Compute TP and FP statistics.
+            num_gbboxes, tp, fp, rscores = \
+                tfe.bboxes_matching_batch(rscores.keys(), rscores, rbboxes,
+                                          glabels, gbboxes, gdifficults)
+        dict_metrics = {}
+        with tf.device('/device:CPU:0'):
+    
+            # FP and TP metrics.
+            tp_fp_metric = tfe.streaming_tp_fp_arrays(num_gbboxes, tp, fp, rscores)
+            for c in tp_fp_metric[0].keys():
+                dict_metrics['tp_fp_%s' % c] = (tp_fp_metric[0][c],
+                                                    tp_fp_metric[1][c])
+                
+            # Add to summaries precision/recall values.
+            aps_voc07 = {}
+            aps_voc12 = {}
+            for c in tp_fp_metric[0].keys():
+                # Precison and recall values.
+                prec, rec = tfe.precision_recall(*tp_fp_metric[0][c])
+    
+                # Average precision VOC07.
+                v = tfe.average_precision_voc07(prec, rec)
+                summary_name = 'AP_VOC07/%s' % c
+                op = tf.summary.scalar(summary_name, v, collections=[])
+                # op = tf.Print(op, [v], summary_name)
+                tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+                aps_voc07[c] = v
+    
+                # Average precision VOC12.
+                v = tfe.average_precision_voc12(prec, rec)
+                summary_name = 'AP_VOC12/%s' % c
+                op = tf.summary.scalar(summary_name, v, collections=[])
+                # op = tf.Print(op, [v], summary_name)
+                tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+                aps_voc12[c] = v
+    
+            # Mean average precision VOC07.
+            summary_name = 'AP_VOC07/mAP'
+            mAP = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
+            op = tf.summary.scalar(summary_name, mAP, collections=[])
+            op = tf.Print(op, [mAP], summary_name)
+            tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+    
+            # Mean average precision VOC12.
+            summary_name = 'AP_VOC12/mAP'
+            mAP = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
+            op = tf.summary.scalar(summary_name, mAP, collections=[])
+            op = tf.Print(op, [mAP], summary_name)
+            tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+            
+            # Split into values and updates ops.
+            names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(dict_metrics)
+        return names_to_updates
+    
     
    
     
