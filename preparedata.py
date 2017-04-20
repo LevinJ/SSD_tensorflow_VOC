@@ -46,7 +46,7 @@ class PrepareData():
             
             shuffle = True
             #make sure most samples can be fetched in one epoch
-            self.num_readers = 1
+            self.num_readers = 4
         else:
             #make sure data is fetchd in sequence
             shuffle = False
@@ -104,11 +104,11 @@ class PrepareData():
                 dynamic_pad=dynamic_pad,
                 capacity=5 * self.batch_size)
         
-        if self.is_training_data:
-            #speed up batch featching during training
-            batch = slim.prefetch_queue.prefetch_queue(
-                    batch, capacity=2)
-            batch = batch.dequeue()
+#         if self.is_training_data:
+#             #speed up batch featching during training
+#             batch = slim.prefetch_queue.prefetch_queue(
+#                     batch, capacity=2)
+#             batch = batch.dequeue()
             
         #convert it back to the list in list format which allows us to easily use later on
         batch= tf_utils.reshape_list(batch, batch_shape)
@@ -162,6 +162,7 @@ class PrepareData():
         self.dataset_name = 'pascalvoc_2007'
         self.dataset_split_name = 'train'
         self.dataset_dir = '../data/voc/tfrecords/'
+        self.is_training_data = True
         
         return self.__get_images_labels_bboxes()
     
@@ -169,6 +170,7 @@ class PrepareData():
         self.dataset_name = 'pascalvoc_2012'
         self.dataset_split_name = 'train'
         self.dataset_dir = '../data/voc/tfrecords/'
+        self.is_training_data = True
         
         return self.__get_images_labels_bboxes()
     def get_voc_2007_test_data(self):
@@ -182,20 +184,22 @@ class PrepareData():
         
     def iterate_file_name(self):
         with tf.Graph().as_default():
-            tensors_to_run = self.get_voc_2012_train_data()
+            batch_voc_2007_train = self.get_voc_2007_train_data()
+            batch_voc_2007_test = self.get_voc_2007_test_data()
+            batch_voc_2012_train = self.get_voc_2012_train_data()
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
-                    for i in range(100):
+                    for i in range(2):
                         #test evaluation
-#                         image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(tensors_to_run))
+                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_test))
                         #test training
-                        image, filename, gclasses, glocalisations, gscores = sess.run(list(tensors_to_run))
+#                         image, filename, gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_test))
                         print(filename)
         return
     def run(self):
-#         return self.iterate_file_name()
+        return self.iterate_file_name()
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
