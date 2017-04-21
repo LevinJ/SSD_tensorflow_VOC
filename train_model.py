@@ -165,7 +165,7 @@ class TrainModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         
         #get batched training training data 
-        image, filename, gclasses, glocalisations, gscores = self.get_voc_2007_train_data()
+        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = self.get_voc_2007_train_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay)
@@ -194,7 +194,7 @@ class TrainModel(PrepareData):
        
         slim.learning.train(
                 train_op,
-                logdir=self.train_dir,
+                self.train_dir,
                 init_fn=self.__get_init_fn(),
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
