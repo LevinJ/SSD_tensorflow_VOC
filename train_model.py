@@ -1,3 +1,12 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import os
+import sys
+import time
+
+
 from datasets import dataset_factory
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -6,6 +15,10 @@ import tensorflow.contrib.slim as slim
 import numpy as np
 from preparedata import PrepareData
 from nets.ssd import g_ssd_model
+from tensorflow.core.protobuf import config_pb2
+from tensorflow.python.client import timeline
+from tensorflow.python.lib.io import file_io
+from tensorflow.python.platform import tf_logging as logging
 
 
 class TrainModel(PrepareData):
@@ -195,6 +208,7 @@ class TrainModel(PrepareData):
         slim.learning.train(
                 train_op,
                 self.train_dir,
+                train_step_fn=self.train_step,
                 init_fn=self.__get_init_fn(),
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
@@ -203,6 +217,78 @@ class TrainModel(PrepareData):
         
         
         return
+    def train_step(self, sess, train_op, global_step, train_step_kwargs):
+        """Function that takes a gradient step and specifies whether to stop.
+    
+        Args:
+            sess: The current session.
+            train_op: An `Operation` that evaluates the gradients and returns the
+                total loss.
+            global_step: A `Tensor` representing the global training step.
+            train_step_kwargs: A dictionary of keyword arguments.
+    
+        Returns:
+            The total loss and a boolean indicating whether or not to stop training.
+    
+        Raises:
+            ValueError: if 'should_trace' is in `train_step_kwargs` but `logdir` is not.
+        """
+        np_global_step = sess.run(global_step)
+        logging.info("step {}".format(np_global_step))
+        start_time = time.time()
+    
+        trace_run_options = None
+        run_metadata = None
+        if 'should_trace' in train_step_kwargs:
+            if 'logdir' not in train_step_kwargs:
+                raise ValueError('logdir must be present in train_step_kwargs when '
+                                                 'should_trace is present')
+            if sess.run(train_step_kwargs['should_trace']):
+                trace_run_options = config_pb2.RunOptions(
+                        trace_level=config_pb2.RunOptions.FULL_TRACE)
+                run_metadata = config_pb2.RunMetadata()
+    
+        total_loss, np_global_step = sess.run([train_op, global_step],
+                                                                                    options=trace_run_options,
+                                                                                    run_metadata=run_metadata)
+        time_elapsed = time.time() - start_time
+    
+        if run_metadata is not None:
+            tl = timeline.Timeline(run_metadata.step_stats)
+            trace = tl.generate_chrome_trace_format()
+            trace_filename = os.path.join(train_step_kwargs['logdir'],
+                                                                        'tf_trace-%d.json' % np_global_step)
+            logging.info('Writing trace to %s', trace_filename)
+            file_io.write_string_to_file(trace_filename, trace)
+            if 'summary_writer' in train_step_kwargs:
+                train_step_kwargs['summary_writer'].add_run_metadata(run_metadata,
+                                                                                                                         'run_metadata-%d' %
+                                                                                                                         np_global_step)
+    
+        if 'should_log' in train_step_kwargs:
+            if sess.run(train_step_kwargs['should_log']):
+                logging.info('global step %d: loss = %.4f (%.2f sec/step)',
+                                         np_global_step, total_loss, time_elapsed)
+    
+        # TODO(nsilberman): figure out why we can't put this into sess.run. The
+        # issue right now is that the stop check depends on the global step. The
+        # increment of global step often happens via the train op, which used
+        # created using optimizer.apply_gradients.
+        #
+        # Since running `train_op` causes the global step to be incremented, one
+        # would expected that using a control dependency would allow the
+        # should_stop check to be run in the same session.run call:
+        #
+        #     with ops.control_dependencies([train_op]):
+        #         should_stop_op = ...
+        #
+        # However, this actually seems not to work on certain platforms.
+        if 'should_stop' in train_step_kwargs:
+            should_stop = sess.run(train_step_kwargs['should_stop'])
+        else:
+            should_stop = False
+    
+        return total_loss, should_stop
     def __add_summaries(self,end_points,learning_rate,total_loss):
         # Add summaries for end_points (activations).
 
