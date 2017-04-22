@@ -203,9 +203,7 @@ class TrainModel(PrepareData):
         
         self.__add_summaries(end_points, learning_rate, total_loss)
         
-        self.current_train_batch_tensor = (image, filename,glabels,gbboxes,gdifficults,predictions, localisations)
-        
-        self.print_mAP_07_op, print_mAP_12_op = g_post_processing_data.get_mAP_tf_current_batch(predictions, localizations, glabels, gbboxes, gdifficults)
+        self.setup_debugging(predictions, localizations, glabels, gbboxes, gdifficults)
         
         ###########################
         # Kicks off the training. #
@@ -221,6 +219,23 @@ class TrainModel(PrepareData):
                 save_summaries_secs=self.save_summaries_secs,
                 save_interval_secs=self.save_interval_secs)
         
+        
+        return
+    def setup_debugging(self,predictions, localizations, glabels, gbboxes, gdifficults):
+#         image_eval, filename_eval,glabels_eval,gbboxes_eval,gdifficults_eval,gclasses_eval, localizations_eval, gscores_eval = self.get_voc_2007_test_data()
+#         predictions_eval, localisations_eval, _, _ = g_ssd_model.get_model(image_eval, weight_decay=self.weight_decay)
+#         _, self.mAP_12_op_eval = g_post_processing_data.get_mAP_tf_current_batch(predictions_eval, localizations_eval, glabels_eval, gbboxes_eval, gdifficults_eval)
+        
+        _, self.mAP_12_op_train = g_post_processing_data.get_mAP_tf_current_batch(predictions, localizations, glabels, gbboxes, gdifficults)
+        return
+    def debug_training(self,sess,global_step):
+        np_global_step = sess.run(global_step)
+        if np_global_step % self.log_every_n_steps != 0:
+            return
+        
+       
+        m_AP_12 = sess.run(self.mAP_12_op_train)
+        logging.info("step {}/{}, m_AP_12 {}".format(np_global_step, self.max_number_of_steps, m_AP_12))
         
         return
     def train_step(self, sess, train_op, global_step, train_step_kwargs):
@@ -239,17 +254,9 @@ class TrainModel(PrepareData):
         Raises:
             ValueError: if 'should_trace' is in `train_step_kwargs` but `logdir` is not.
         """
-        np_global_step = sess.run(global_step)
-        logging.info("step {}".format(np_global_step))
-        start_time = time.time()
-       
-        image, filename,glabels,gbboxes,gdifficults,predictions, localizations = sess.run(self.current_train_batch_tensor)
-        print(filename)
-        m_ap = sess.run(self.print_mAP_07_op)
-        print(m_ap)
         
-#         g_eval_voc.eval_voc(image, filename, glabels, gbboxes, gdifficults, predictions, localizations)
     
+        start_time = time.time()
         trace_run_options = None
         run_metadata = None
         if 'should_trace' in train_step_kwargs:
@@ -265,6 +272,9 @@ class TrainModel(PrepareData):
                                                                                     options=trace_run_options,
                                                                                     run_metadata=run_metadata)
         time_elapsed = time.time() - start_time
+        
+        self.debug_training(sess,global_step)
+        
     
         if run_metadata is not None:
             tl = timeline.Timeline(run_metadata.step_stats)

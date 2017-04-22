@@ -79,23 +79,23 @@ class PostProcessingData(object):
             
             aps_voc07, aps_voc12 = self.__compute_AP(c_scores, c_tp, c_fp, c_num_gbboxes)
             # Mean average precision VOC07.
-            summary_name = 'AP_VOC07/mAP'
-            mAP = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
+#             summary_name = 'AP_VOC07/mAP'
+            mAP_07_op = tf.add_n(list(aps_voc07.values())) / len(aps_voc07)
 #             op = tf.summary.scalar(summary_name, mAP, collections=[])
-            print_mAP_07_op = tf.Print(mAP, [mAP], summary_name)
-            tf.summary.scalar(summary_name, print_mAP_07_op)
+#             print_mAP_07_op = tf.Print(mAP_07, [mAP_07], summary_name)
+#             tf.summary.scalar(summary_name, print_mAP_07_op)
 #             tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
     
             # Mean average precision VOC12.
-            summary_name = 'AP_VOC12/mAP'
-            mAP = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
+#             summary_name = 'AP_VOC12/mAP'
+            mAP_12_op = tf.add_n(list(aps_voc12.values())) / len(aps_voc12)
 #             op = tf.summary.scalar(summary_name, mAP, collections=[])
-            print_mAP_12_op = tf.Print(mAP, [mAP], summary_name)
-            tf.summary.scalar(summary_name, print_mAP_12_op)
+#             print_mAP_12_op = tf.Print(mAP, [mAP], summary_name)
+#             tf.summary.scalar(summary_name, print_mAP_12_op)
 
 
             
-        return print_mAP_07_op, print_mAP_12_op
+        return mAP_07_op, mAP_12_op
     
     def get_mAP_tf_accumulative(self,predictions, localisations,glabels, gbboxes,gdifficults):
         # Performing post-processing on CPU: loop-intensive, usually more efficient.

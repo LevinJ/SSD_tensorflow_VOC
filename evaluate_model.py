@@ -56,7 +56,7 @@ class EvaluateModel(PrepareData):
         
         num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
         
-        num_batches = 3
+        num_batches = 5
         
         
        
@@ -67,7 +67,7 @@ class EvaluateModel(PrepareData):
             checkpoint_path=checkpoint_path,
             logdir=self.eval_dir,
             num_evals=num_batches,
-            eval_op=list(names_to_updates.values()) + [print_mAP_07_op, print_mAP_12_op,print_filename_op] ,
+            eval_op=list(names_to_updates.values()) ,
             variables_to_restore=variables_to_restore)
         # Log time spent.
         elapsed = time.time()
@@ -90,7 +90,7 @@ class EvaluateModel(PrepareData):
         self.checkpoint_path = './logs/'
         
         
-        self.eval_dir = './logs/'
+        self.eval_dir = './logs/evals/'
         
         
       
