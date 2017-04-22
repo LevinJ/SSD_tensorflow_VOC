@@ -144,19 +144,19 @@ class PrepareData():
             found_matched = True  
             
         return found_matched
-    def get_voc_2007_train_data(self):
+    def get_voc_2007_train_data(self,is_training_data=True):
         self.dataset_name = 'pascalvoc_2007'
         self.dataset_split_name = 'train'
         self.dataset_dir = '../data/voc/tfrecords/'
-        self.is_training_data = True
+        self.is_training_data = is_training_data
         
         return self.__get_images_labels_bboxes()
     
-    def get_voc_2012_train_data(self):
+    def get_voc_2012_train_data(self,is_training_data=True):
         self.dataset_name = 'pascalvoc_2012'
         self.dataset_split_name = 'train'
         self.dataset_dir = '../data/voc/tfrecords/'
-        self.is_training_data = True
+        self.is_training_data = is_training_data
         
         return self.__get_images_labels_bboxes()
     def get_voc_2007_test_data(self):
