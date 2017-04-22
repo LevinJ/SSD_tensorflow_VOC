@@ -277,10 +277,15 @@ class SSDModel():
                 
 
     def get_all_anchors(self, minmaxformat=False):
+        
         if self.__anchors is not None:
             if not minmaxformat:
+                #cache the anchors
+                #transform anchors into numpy array(h,w)
                 return self.__anchors
             else:
+                #sometimes we might want to 
+                #display the anchors, so want them to in form of numpy array(per each layer)
                 if self.__anchors_minmax is not None:
                     return self.__anchors_minmax
                 num_anchors = 0
@@ -348,6 +353,21 @@ class SSDModel():
         return ssd_common.tf_ssd_bboxes_decode(
             feat_localizations, anchors,
             prior_scaling=self.prior_scaling)
+        
+    def decode_bboxes_all_layers(self, localizations):
+        """convert ssd boxes from relative to input image anchors to relative to 
+        input width/height
+    
+        Return:
+          numpy array BatchesxHxWx4: ymin, xmin, ymax, xmax
+        """
+        decoded_bboxes = []
+        all_anchors = self.get_all_anchors()
+        for i in range(len(localizations)):
+            decoded_bboxes.append(self.decode_bboxes_layer(localizations[i], all_anchors[i]))
+        
+        
+        return decoded_bboxes
         
     def decode_bboxes_layer(self, feat_localizations,anchors):
         """convert ssd boxes from relative to input image anchors to relative to 

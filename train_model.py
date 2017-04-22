@@ -19,6 +19,8 @@ from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.client import timeline
 from tensorflow.python.lib.io import file_io
 from tensorflow.python.platform import tf_logging as logging
+from  postprocessing.eval_voc import g_eval_voc
+from postprocessingdata import g_post_processing_data
 
 
 class TrainModel(PrepareData):
@@ -178,13 +180,13 @@ class TrainModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         
         #get batched training training data 
-        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = self.get_voc_2007_train_data()
+        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_train_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay)
         
         #get model training losss
-        total_loss = g_ssd_model.get_losses(logits, localisations, gclasses, glocalisations, gscores)
+        total_loss = g_ssd_model.get_losses(logits, localisations, gclasses, localizations, gscores)
 
         
         
@@ -200,6 +202,10 @@ class TrainModel(PrepareData):
         train_op = slim.learning.create_train_op(total_loss, optimizer, variables_to_train=variables_to_train)
         
         self.__add_summaries(end_points, learning_rate, total_loss)
+        
+        self.current_train_batch_tensor = (image, filename,glabels,gbboxes,gdifficults,predictions, localisations)
+        
+        self.print_mAP_07_op, print_mAP_12_op = g_post_processing_data.get_mAP_tf_current_batch(predictions, localizations, glabels, gbboxes, gdifficults)
         
         ###########################
         # Kicks off the training. #
@@ -236,6 +242,13 @@ class TrainModel(PrepareData):
         np_global_step = sess.run(global_step)
         logging.info("step {}".format(np_global_step))
         start_time = time.time()
+       
+        image, filename,glabels,gbboxes,gdifficults,predictions, localizations = sess.run(self.current_train_batch_tensor)
+        print(filename)
+        m_ap = sess.run(self.print_mAP_07_op)
+        print(m_ap)
+        
+#         g_eval_voc.eval_voc(image, filename, glabels, gbboxes, gdifficults, predictions, localizations)
     
         trace_run_options = None
         run_metadata = None

@@ -268,6 +268,18 @@ def bboxes_matching(label, scores, bboxes,
         rlabel = tf.cast(label, glabels.dtype)
         # Number of groundtruth boxes.
         gdifficults = tf.cast(gdifficults, tf.bool)
+        
+        #At the preprocessing stage, some groud truth bbox and lables may be cliped/sampled
+        #we need to do the same gdifficults
+        #Also we might have added padding during data queuing, we remove the padding here as well
+        n_valid_glabels = tf.count_nonzero(glabels,dtype=tf.int32)
+#         gdifficults = tf.Print(gdifficults, [tf.size(gdifficults), glabels, tf.size(glabels)], "value size")
+#         n_valid_glabels = tf.Print(n_valid_glabels, [n_valid_glabels], "valid size")
+        gdifficults = gdifficults[:n_valid_glabels]
+        glabels = glabels[:n_valid_glabels]
+        gbboxes = gbboxes[:n_valid_glabels]
+        
+        
         n_gbboxes = tf.count_nonzero(tf.logical_and(tf.equal(glabels, label),
                                                     tf.logical_not(gdifficults)))
         # Grountruth matching arrays.
@@ -277,13 +289,20 @@ def bboxes_matching(label, scores, bboxes,
         sdtype = tf.bool
         ta_tp_bool = tf.TensorArray(sdtype, size=rsize, dynamic_size=False, infer_shape=True)
         ta_fp_bool = tf.TensorArray(sdtype, size=rsize, dynamic_size=False, infer_shape=True)
+        
+        
 
         # Loop over returned objects.
         def m_condition(i, ta_tp, ta_fp, gmatch):
             r = tf.less(i, rsize)
             return r
-
-        def m_body(i, ta_tp, ta_fp, gmatch):
+        def m_body_no_lables(i, ta_tp, ta_fp, gmatch):
+            
+            ta_tp = ta_tp.write(i, False)
+            ta_fp = ta_fp.write(i, True)
+           
+            return [i+1, ta_tp, ta_fp, gmatch]
+        def m_body_normal(i, ta_tp, ta_fp, gmatch):
             # Jaccard score with groundtruth bboxes.
             rbbox = bboxes[i]
             jaccard = bboxes_jaccard(rbbox, gbboxes)
@@ -308,8 +327,11 @@ def bboxes_matching(label, scores, bboxes,
             mask = tf.logical_and(tf.equal(grange, idxmax),
                                   tf.logical_and(not_difficult, match))
             gmatch = tf.logical_or(gmatch, mask)
-
             return [i+1, ta_tp, ta_fp, gmatch]
+        def m_body(i, ta_tp, ta_fp, gmatch):
+            
+
+            return tf.cond(tf.equal(n_valid_glabels, 0), lambda: m_body_no_lables(i, ta_tp, ta_fp, gmatch), lambda: m_body_normal(i, ta_tp, ta_fp, gmatch))
         # Main loop definition.
         i = 0
         [i, ta_tp_bool, ta_fp_bool, gmatch] = \

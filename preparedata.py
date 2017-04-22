@@ -183,7 +183,7 @@ class PrepareData():
                         print(filename)
         return
     def run(self):
-        return self.iterate_file_name()
+#         return self.iterate_file_name()
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
