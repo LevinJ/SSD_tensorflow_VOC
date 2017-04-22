@@ -21,6 +21,7 @@ from tensorflow.python.lib.io import file_io
 from tensorflow.python.platform import tf_logging as logging
 from  postprocessing.eval_voc import g_eval_voc
 from postprocessingdata import g_post_processing_data
+from tensorflow.python.training import saver as tf_saver
 
 
 class TrainModel(PrepareData):
@@ -213,6 +214,7 @@ class TrainModel(PrepareData):
                 train_op,
                 self.train_dir,
                 train_step_fn=self.train_step,
+                saver=tf_saver.Saver(max_to_keep=50),
                 init_fn=self.__get_init_fn(),
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
@@ -391,7 +393,7 @@ class TrainModel(PrepareData):
         self.trainable_scopes = g_ssd_model.model_name
         
         
-        self.max_number_of_steps = 5000
+        self.max_number_of_steps = 10000
         self.log_every_n_steps = 100
         
         self.learning_rate = 0.001

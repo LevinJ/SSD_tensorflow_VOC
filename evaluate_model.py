@@ -34,7 +34,7 @@ class EvaluateModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         tf_global_step = slim.get_or_create_global_step()
         
-        image, filename, glabels,gbboxes,gdifficults, gclasses, glocalisations, gscores = self.get_voc_2007_train_data()
+        image, filename, glabels,gbboxes,gdifficults, gclasses, glocalisations, gscores = self.get_voc_2007_test_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image)
@@ -56,7 +56,7 @@ class EvaluateModel(PrepareData):
         
         num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
         
-        num_batches = 5
+#         num_batches = 5
         
         
        
