@@ -598,7 +598,7 @@ class SSDModel():
         feat_cx = (feat_xmax + feat_xmin) / 2.
         feat_h = feat_ymax - feat_ymin
         feat_w = feat_xmax - feat_xmin
-        # Encode features.
+        # Encode features, convert ground truth bboxes to  shape offset relative to default boxes 
         feat_cy = (feat_cy - yref) / href / prior_scaling[0]
         feat_cx = (feat_cx - xref) / wref / prior_scaling[1]
         feat_h = tf.log(feat_h / href) / prior_scaling[2]
@@ -665,84 +665,101 @@ class SSDModel():
           gscores: (list of) groundtruth score Tensors;
         """
         with tf.name_scope(scope, 'ssd_losses'):
-            l_cross_pos = []
-            l_cross_neg = []
-            l_loc = []
+            lshape = tfe.get_shape(logits[0], 5)
+            num_classes = lshape[-1]
+            batch_size = lshape[0]
+    
+            # Flatten out all vectors!
+            flogits = []
+            fgclasses = []
+            fgscores = []
+            flocalisations = []
+            fglocalisations = []
             for i in range(len(logits)):
-                dtype = logits[i].dtype
-                with tf.name_scope('block_%i' % i):
-                    # Determine weights Tensor.
-                    pmask = gscores[i] > match_threshold
-                    fpmask = tf.cast(pmask, dtype)
-                    n_positives = tf.reduce_sum(fpmask)
+                flogits.append(tf.reshape(logits[i], [-1, num_classes]))
+                fgclasses.append(tf.reshape(gclasses[i], [-1]))
+                fgscores.append(tf.reshape(gscores[i], [-1]))
+                flocalisations.append(tf.reshape(localisations[i], [-1, 4]))
+                fglocalisations.append(tf.reshape(glocalisations[i], [-1, 4]))
+            # And concat the crap!
+            logits = tf.concat(flogits, axis=0)
+            gclasses = tf.concat(fgclasses, axis=0)
+            gscores = tf.concat(fgscores, axis=0)
+            localisations = tf.concat(flocalisations, axis=0)
+            glocalisations = tf.concat(fglocalisations, axis=0)
+            dtype = logits.dtype
     
-                    # Select some random negative entries.
-                    # n_entries = np.prod(gclasses[i].get_shape().as_list())
-                    # r_positive = n_positives / n_entries
-                    # r_negative = negative_ratio * n_positives / (n_entries - n_positives)
+            # Compute positive matching mask...
+            pmask = gscores > match_threshold
+            fpmask = tf.cast(pmask, dtype)
+            n_positives = tf.reduce_sum(fpmask)
     
-                    # Negative mask.
-                    no_classes = tf.cast(pmask, tf.int32)
-                    predictions = slim.softmax(logits[i])
-                    nmask = tf.logical_and(tf.logical_not(pmask),
-                                           gscores[i] > -0.5)
-                    fnmask = tf.cast(nmask, dtype)
-                    nvalues = tf.where(nmask,
-                                       predictions[:, :, :, :, 0],
-                                       1. - fnmask)
-                    nvalues_flat = tf.reshape(nvalues, [-1])
-                    # Number of negative entries to select.
-                    n_neg = tf.cast(negative_ratio * n_positives, tf.int32)
-                    n_neg = tf.maximum(n_neg, tf.size(nvalues_flat) // 8)
-                    n_neg = tf.maximum(n_neg, tf.shape(nvalues)[0] * 4)
-                    max_neg_entries = 1 + tf.cast(tf.reduce_sum(fnmask), tf.int32)
-                    n_neg = tf.minimum(n_neg, max_neg_entries)
+            # Hard negative mining...
+            #for no_classes, we only care that false positive's label is 0
+            #this is why pmask sufice our needs
+            no_classes = tf.cast(pmask, tf.int32)
+            predictions = slim.softmax(logits)
+            nmask = tf.logical_and(tf.logical_not(pmask),
+                                   gscores > -0.5)
+            fnmask = tf.cast(nmask, dtype)
+            nvalues = tf.where(nmask,
+                               predictions[:, 0],
+                               1. - fnmask)
+            nvalues_flat = tf.reshape(nvalues, [-1])
+            # Number of negative entries to select.
+            max_neg_entries = tf.cast(tf.reduce_sum(fnmask), tf.int32)
+            
+            n_neg = tf.cast(negative_ratio * n_positives, tf.int32)
+            n_neg = tf.minimum(n_neg, max_neg_entries)
+            #avoid n_neg is zero, and cause error when doing top_k later on
+            n_neg = tf.maximum(n_neg, 1)
     
-                    val, idxes = tf.nn.top_k(-nvalues_flat, k=n_neg)
-                    minval = val[-1]
-                    # Final negative mask.
-                    nmask = tf.logical_and(nmask, -nvalues > minval)
-                    fnmask = tf.cast(nmask, dtype)
+            val, idxes = tf.nn.top_k(-nvalues_flat, k=n_neg)
+            max_hard_pred = -val[-1]
+            # Final negative mask, hard negative mining
+            nmask = tf.logical_and(nmask, nvalues <= max_hard_pred)
+            fnmask = tf.cast(nmask, dtype)
     
-                    # Add cross-entropy loss.
-                    with tf.name_scope('cross_entropy_pos'):
-                        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-                                                                              labels=gclasses[i])
-                        loss = tf.losses.compute_weighted_loss(loss, fpmask)
-                        l_cross_pos.append(loss)
+            # Add cross-entropy loss.
+            with tf.name_scope('cross_entropy_pos'):
+                total_cross_pos = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
+                                                                      labels=gclasses)
+                total_cross_pos = tf.reduce_sum(total_cross_pos * fpmask)
+                tf.losses.add_loss(total_cross_pos)
     
-                    with tf.name_scope('cross_entropy_neg'):
-                        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits[i],
-                                                                              labels=no_classes)
-                        loss = tf.losses.compute_weighted_loss(loss, fnmask)
-                        l_cross_neg.append(loss)
+            with tf.name_scope('cross_entropy_neg'):
+                total_cross_neg = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
+                                                                      labels=no_classes)
+                total_cross_neg = tf.reduce_sum(total_cross_neg * fnmask)
+                tf.losses.add_loss(total_cross_neg)
     
-                    # Add localization loss: smooth L1, L2, ...
-                    with tf.name_scope('localization'):
-                        # Weights Tensor: positive mask + random negative.
-                        weights = tf.expand_dims(alpha * fpmask, axis=-1)
-                        loss = custom_layers.abs_smooth(localisations[i] - glocalisations[i])
-                        loss = tf.losses.compute_weighted_loss(loss, weights)
-                        l_loc.append(loss)
-    
-            # Additional total losses...
-            with tf.name_scope('total'):
-                total_cross_pos = tf.add_n(l_cross_pos, 'cross_entropy_pos')
-                total_cross_neg = tf.add_n(l_cross_neg, 'cross_entropy_neg')
-                total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
-                total_loc = tf.add_n(l_loc, 'localization')
-    
-                # Add to EXTRA LOSSES TF.collection
-                tf.add_to_collection('EXTRA_LOSSES', total_cross_pos)
-                tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
-                tf.add_to_collection('EXTRA_LOSSES', total_cross)
-                tf.add_to_collection('EXTRA_LOSSES', total_loc)
-            model_loss = tf.add(total_loc, total_cross, 'model_loss')
+            # Add localization loss: smooth L1, L2, ...
+            with tf.name_scope('localization'):
+                # Weights Tensor: positive mask + random negative.
+                weights = tf.expand_dims(alpha * fpmask, axis=-1)
+                total_loc = custom_layers.abs_smooth(localisations - glocalisations)
+                total_loc = tf.reduce_sum(total_loc * weights)
+                tf.losses.add_loss(total_loc)
+            
+            total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
+            
+            
+            # Add to EXTRA LOSSES TF.collection
+            tf.add_to_collection('EXTRA_LOSSES', total_cross_pos)
+            tf.add_to_collection('EXTRA_LOSSES', total_cross_neg)
+            tf.add_to_collection('EXTRA_LOSSES', total_cross)
+            tf.add_to_collection('EXTRA_LOSSES', total_loc)
+                
+            #stick with the orgiginal paper in terms of definig model loss
+            model_loss = tf.get_collection(tf.GraphKeys.LOSSES)
+            model_loss = tf.cond(tf.equal(n_positives,0), 0, (1.0/n_positives) *model_loss)
             #Add regularziaton loss
             regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
             regularization_loss = tf.add_n(regularization_losses,name='regularization_loss')
-            total_loss = tf.add(model_loss, regularization_loss, 'total_loss')
-        return total_loss
+            
+            #if model oss is zero, no need to do gradient update on this batch
+            total_loss = tf.cond(tf.equal(n_positives,0), 0, tf.add(model_loss, regularization_loss))
+            return total_loss
    
     
     
