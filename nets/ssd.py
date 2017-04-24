@@ -577,11 +577,11 @@ class SSDModel():
             # TODO, we probably can do without below code, will remove them in the future
             #This is because we've already checked the label previosly, which means feat_scores is already 0, 
             #thus belong to negative sample
-            interscts = intersection_with_anchors(bbox)
-            mask = tf.logical_and(interscts > ignore_threshold,
-                                  label == no_annotation_label)
-            # Replace scores by -1.
-            feat_scores = tf.where(mask, -tf.cast(mask, dtype), feat_scores)
+#             interscts = intersection_with_anchors(bbox)
+#             mask = tf.logical_and(interscts > ignore_threshold,
+#                                   label == no_annotation_label)
+#             # Replace scores by -1.
+#             feat_scores = tf.where(mask, -tf.cast(mask, dtype), feat_scores)
     
             return [i+1, feat_labels, feat_scores,
                     feat_ymin, feat_xmin, feat_ymax, feat_xmax]
