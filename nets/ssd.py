@@ -53,6 +53,8 @@ class SSDModel():
         self.anchor_steps=[8, 16, 32, 64, 100, 300] 
         self.anchor_offset=0.5
         #Scaling of encoded coordinates.
+        #For the scaling, the idea is try to scale such that all error terms (classification + position + size) 
+        #have roughly the same scaling. Otherwise, the training would tend to over-optimise one component and not the others.
         self.prior_scaling=[0.1, 0.1, 0.2, 0.2] 
         
         #normalization for conv4 3
@@ -577,11 +579,17 @@ class SSDModel():
             # TODO, we probably can do without below code, will remove them in the future
             #This is because we've already checked the label previosly, which means feat_scores is already 0, 
             #thus belong to negative sample
+            #The idea comes from the KITTI dataset where some part of the dataset images are signaled as being not labelled : 
+            #there may be a car/person/... in these parts, but it has not been segmented. If you don't keep track of these parts, 
+            #you may end up with the SSD model detecting objects not annotated, and the loss function thinking it is False positive, 
+            #and pushing for not detecting it. Which is not really what we want !So basically, 
+            #I set up a mask such that the loss function ignores the anchors which overlap too much with parts of images no-annotated.
 #             interscts = intersection_with_anchors(bbox)
 #             mask = tf.logical_and(interscts > ignore_threshold,
 #                                   label == no_annotation_label)
 #             # Replace scores by -1.
 #             feat_scores = tf.where(mask, -tf.cast(mask, dtype), feat_scores)
+        
     
             return [i+1, feat_labels, feat_scores,
                     feat_ymin, feat_xmin, feat_ymax, feat_xmax]
@@ -724,13 +732,13 @@ class SSDModel():
             with tf.name_scope('cross_entropy_pos'):
                 total_cross_pos = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
                                                                       labels=gclasses)
-                total_cross_pos = tf.reduce_sum(total_cross_pos * fpmask)
+                total_cross_pos = tf.reduce_sum(total_cross_pos * fpmask, name="cross_entropy_pos")
                 tf.losses.add_loss(total_cross_pos)
     
             with tf.name_scope('cross_entropy_neg'):
                 total_cross_neg = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
                                                                       labels=no_classes)
-                total_cross_neg = tf.reduce_sum(total_cross_neg * fnmask)
+                total_cross_neg = tf.reduce_sum(total_cross_neg * fnmask, name="cross_entropy_neg")
                 tf.losses.add_loss(total_cross_neg)
     
             # Add localization loss: smooth L1, L2, ...
@@ -738,7 +746,7 @@ class SSDModel():
                 # Weights Tensor: positive mask + random negative.
                 weights = tf.expand_dims(alpha * fpmask, axis=-1)
                 total_loc = custom_layers.abs_smooth(localisations - glocalisations)
-                total_loc = tf.reduce_sum(total_loc * weights)
+                total_loc = tf.reduce_sum(total_loc * weights, name="localization")
                 tf.losses.add_loss(total_loc)
             
             total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
@@ -752,13 +760,14 @@ class SSDModel():
                 
             #stick with the orgiginal paper in terms of definig model loss
             model_loss = tf.get_collection(tf.GraphKeys.LOSSES)
-            model_loss = tf.cond(tf.equal(n_positives,0), 0, (1.0/n_positives) *model_loss)
+            model_loss = tf.add_n(model_loss)
+            model_loss = tf.cond(tf.equal(n_positives,0), lambda: tf.constant(0.0), lambda: tf.div(1.0, n_positives) *model_loss)
             #Add regularziaton loss
             regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
             regularization_loss = tf.add_n(regularization_losses,name='regularization_loss')
             
             #if model oss is zero, no need to do gradient update on this batch
-            total_loss = tf.cond(tf.equal(n_positives,0), 0, tf.add(model_loss, regularization_loss))
+            total_loss = tf.cond(tf.equal(n_positives,0), lambda: tf.constant(0.0), lambda: tf.add(model_loss, regularization_loss))
             return total_loss
    
     
