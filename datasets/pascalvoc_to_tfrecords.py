@@ -211,8 +211,7 @@ def run(dataset_dir, output_dir, name='voc_train', shuffling=False):
             sys.stdout.write('\r>> Converting image %d/%d' % (i + 1, len(filenames)))
             sys.stdout.flush()
 
-            name = filename[:-4]
-            _add_to_tfrecord(dataset_dir, name, tfrecord_writer)
+            _add_to_tfrecord(dataset_dir, filename[:-4], tfrecord_writer)
 
     # Finally, write the labels file:
     # labels_to_class_names = dict(zip(range(len(_CLASS_NAMES)), _CLASS_NAMES))
