@@ -61,7 +61,7 @@ class TrainModel(PrepareData):
         
         self.batch_size= 32
         
-        self.save_interval_secs = 600
+        self.save_interval_secs = 60*60#one hour
         self.save_summaries_secs= 60
 #         self.log_every_n_steps = 100
         
@@ -393,7 +393,7 @@ class TrainModel(PrepareData):
         self.trainable_scopes = g_ssd_model.model_name
         
         
-        self.max_number_of_steps = 10000
+        self.max_number_of_steps = 80000
         self.log_every_n_steps = 100
         
         self.learning_rate = 0.001
