@@ -294,6 +294,9 @@ def random_flip_left_right(image, bboxes, seed=None):
         _Check3DImage(image, require_static=False)
         uniform_random = random_ops.random_uniform([], 0, 1.0, seed=seed)
         mirror_cond = math_ops.less(uniform_random, .5)
+        
+        #debugging info
+#         mirror_cond = tf.Print(mirror_cond, [mirror_cond], 'flipped image')
         # Flip image.
         result = control_flow_ops.cond(mirror_cond,
                                        lambda: array_ops.reverse_v2(image, [1]),

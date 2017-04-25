@@ -265,24 +265,24 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Distort image and bounding boxes.
         dst_image = image
-        dst_image, labels, bboxes, distort_bbox = \
-            distorted_bounding_box_crop(image, labels, bboxes,
-                                        aspect_ratio_range=CROP_RATIO_RANGE)
+#         dst_image, labels, bboxes, distort_bbox = \
+#             distorted_bounding_box_crop(image, labels, bboxes,
+#                                         aspect_ratio_range=CROP_RATIO_RANGE)
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,
                                           align_corners=False)
-        tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
+#         tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
 
         # Randomly flip the image horizontally.
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         # Randomly distort the colors. There are 4 ways to do it.
-        dst_image = apply_with_random_selector(
-                dst_image,
-                lambda x, ordering: distort_color(x, ordering, fast_mode),
-                num_cases=4)
-        tf_summary_image(dst_image, bboxes, 'image_color_distorted')
+#         dst_image = apply_with_random_selector(
+#                 dst_image,
+#                 lambda x, ordering: distort_color(x, ordering, fast_mode),
+#                 num_cases=4)
+#         tf_summary_image(dst_image, bboxes, 'image_color_distorted')
 
         # Rescale to VGG input scale.
         image = dst_image * 255.
