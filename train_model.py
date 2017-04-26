@@ -179,7 +179,7 @@ class TrainModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         
         #get batched training training data 
-        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_2012_train_data()
+        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_train_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay)
