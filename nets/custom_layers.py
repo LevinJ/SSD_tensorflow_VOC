@@ -26,6 +26,8 @@ from tensorflow.contrib.layers.python.layers import utils
 from tensorflow.python.ops import nn
 from tensorflow.python.ops import init_ops
 from tensorflow.python.ops import variable_scope
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import math_ops
 
 
 def abs_smooth(x):
@@ -40,6 +42,18 @@ def abs_smooth(x):
     absx = tf.abs(x)
     minx = tf.minimum(absx, 1)
     r = 0.5 * ((absx - 1) * minx + absx)
+    return r
+
+def abs_smooth_2(x):
+    """Smoothed absolute function. Useful to compute an L1 smooth error.
+
+    Define as:
+        x^2 / 2         if abs(x) < 1
+        abs(x) - 0.5    if abs(x) > 1
+    an implementation that strictly stick to the formula
+    """
+    absx = tf.abs(x)
+    r = array_ops.where(absx < 1, math_ops.square(x)/2.0, absx-0.5)
     return r
 
 

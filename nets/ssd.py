@@ -10,6 +10,7 @@ from numpy import newaxis
 from nets import custom_layers
 import tf_extended as tfe
 from nets import ssd_common
+from tensorflow.python.ops import array_ops
 
 
 class SSDModel():
@@ -745,11 +746,15 @@ class SSDModel():
             with tf.name_scope('localization'):
                 # Weights Tensor: positive mask + random negative.
                 weights = tf.expand_dims(alpha * fpmask, axis=-1)
-                total_loc = custom_layers.abs_smooth(localisations - glocalisations)
+                total_loc = custom_layers.abs_smooth_2(localisations - glocalisations)
                 total_loc = tf.reduce_sum(total_loc * weights, name="localization")
                 tf.losses.add_loss(total_loc)
             
             total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
+            
+            #debugging info
+            tf.summary.scalar("postive_num", n_positives)
+            tf.summary.scalar("negative_num", n_neg)
             
             
             # Add to EXTRA LOSSES TF.collection
@@ -761,13 +766,13 @@ class SSDModel():
             #stick with the orgiginal paper in terms of definig model loss
             model_loss = tf.get_collection(tf.GraphKeys.LOSSES)
             model_loss = tf.add_n(model_loss)
-            model_loss = tf.cond(tf.equal(n_positives,0), lambda: tf.constant(0.0), lambda: tf.div(1.0, n_positives) *model_loss)
+            model_loss = array_ops.where(tf.equal(n_positives,0), array_ops.zeros_like(model_loss), tf.div(1.0, n_positives) *model_loss)
             #Add regularziaton loss
             regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
             regularization_loss = tf.add_n(regularization_losses,name='regularization_loss')
             
             #if model oss is zero, no need to do gradient update on this batch
-            total_loss = tf.cond(tf.equal(n_positives,0), lambda: tf.constant(0.0), lambda: tf.add(model_loss, regularization_loss))
+            total_loss = array_ops.where(tf.equal(n_positives,0), array_ops.zeros_like(model_loss), tf.add(model_loss, regularization_loss))
             return total_loss
    
     

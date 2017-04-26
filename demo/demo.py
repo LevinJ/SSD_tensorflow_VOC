@@ -77,6 +77,8 @@ def process_image(img, select_threshold=0.5, nms_threshold=.45, net_shape=(300, 
 path = './images/'
 image_name = 'dog.jpg'
 image_name = 'person.jpg'
+image_name = '004487.jpg'
+image_name = '000009.jpg'
 
 img = mpimg.imread(path + image_name)
 rclasses, rscores, rbboxes =  process_image(img)
