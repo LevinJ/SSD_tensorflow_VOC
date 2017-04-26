@@ -1,4 +1,4 @@
-from datasets import pascalvoc_common
+from datasets import pascalvoc_datasets
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import tensorflow.contrib.slim as slim
@@ -36,7 +36,7 @@ class PrepareData():
         return image, labels, bboxes
     def __get_images_labels_bboxes(self,data_sources, num_samples,is_training_data):
         
-        self.dataset = pascalvoc_common.get_dataset_info(data_sources, num_samples)
+        self.dataset = pascalvoc_datasets.get_dataset_info(data_sources, num_samples)
         self.is_training_data = is_training_data
         if self.is_training_data:
             
@@ -145,24 +145,24 @@ class PrepareData():
         return found_matched
     def get_voc_2007_train_data(self,is_training_data=True):
         data_sources = "../data/voc/tfrecords/voc_train_2007*.tfrecord"
-        num_samples = pascalvoc_common.DATASET_SIZE['2007_train']
+        num_samples = pascalvoc_datasets.DATASET_SIZE['2007_train']
        
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     
     def get_voc_2012_train_data(self,is_training_data=True):
         data_sources = "../data/voc/tfrecords/voc_train_2012*.tfrecord"
-        num_samples = pascalvoc_common.DATASET_SIZE['2012_train']
+        num_samples = pascalvoc_datasets.DATASET_SIZE['2012_train']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     
     def get_voc_2007_2012_train_data(self,is_training_data=True):
         data_sources = "../data/voc/tfrecords/voc_train*.tfrecord"
-        num_samples = pascalvoc_common.DATASET_SIZE['2007_train'] + pascalvoc_common.DATASET_SIZE['2012_train']
+        num_samples = pascalvoc_datasets.DATASET_SIZE['2007_train'] + pascalvoc_datasets.DATASET_SIZE['2012_train']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     def get_voc_2007_test_data(self):
         data_sources = "../data/voc/tfrecords/voc_test_2007*.tfrecord"
-        num_samples = pascalvoc_common.DATASET_SIZE['2007_test']
+        num_samples = pascalvoc_datasets.DATASET_SIZE['2007_test']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, False)
     
