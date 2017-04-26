@@ -84,7 +84,7 @@ class PrepareData():
             self.num_preprocessing_threads = 1
         else:
             # to make sure data is fectched in sequence during evaluation
-            self.num_preprocessing_threads = len()
+            self.num_preprocessing_threads = 2
             
         #tf.train.batch accepts only list of tensors, this batch shape can used to
         #flatten the list in list, and later on convet it back to list in list.
@@ -98,7 +98,10 @@ class PrepareData():
         #convert it back to the list in list format which allows us to easily use later on
         batch= tf_utils.reshape_list(batch, batch_shape)
         return batch
-    def __disp_image(self, img, shape_data, classes, bboxes):
+    def __disp_image(self, img, classes, bboxes):
+        bvalid = (classes !=0)
+        classes = classes[bvalid]
+        bboxes = bboxes[bvalid]
         scores =np.full(classes.shape, 1.0)
         visualization.plt_bboxes(img, classes, scores, bboxes,title='Ground Truth')
         return
@@ -167,56 +170,56 @@ class PrepareData():
         return self.__get_images_labels_bboxes(data_sources, num_samples, False)
     
         
-    def iterate_file_name(self):
+    def iterate_file_name(self, batch_data):
+        
+        num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
+        with tf.Session('') as sess:
+            init = tf.global_variables_initializer()
+            sess.run(init)
+            with slim.queues.QueueRunners(sess):
+                for i in range(num_batches):
+                    
+                    image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
+                    print(filename)
+        return
+    def run(self):
+        
+        
         with tf.Graph().as_default():
 #             batch_data= self.get_voc_2007_train_data()
 #             batch_data = self.get_voc_2007_test_data()
 #             batch_data = self.get_voc_2012_train_data()
-            batch_data = self.get_voc_2007_2012_train_data()
-            num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
-            with tf.Session('') as sess:
-                init = tf.global_variables_initializer()
-                sess.run(init)
-                with slim.queues.QueueRunners(sess):
-                    for i in range(num_batches):
-                        
-                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
-                        print(filename)
-        return
-    def run(self):
-        return self.iterate_file_name()
-        
-        with tf.Graph().as_default():
-            batch_voc_2007_train = self.get_voc_2007_train_data()
-            batch_voc_2007_test = self.get_voc_2007_test_data()
-            batch_voc_2012_train = self.get_voc_2012_train_data()
-            
+            batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
+
+
+#             return self.iterate_file_name(batch_data)
+           
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):  
-                    while True:
-                        for current_data in [batch_voc_2012_train]:
-                             
-                            
-                            image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(current_data))
-                           
-                            print(filename)
-                             
-                             
-                            #selet the first image in the batch
-                            target_labels_data = [item[0] for item in gclasses]
-                            target_localizations_data = [item[0] for item in glocalisations]
-                            target_scores_data = [item[0] for item in gscores]
-                            image_data = image[0]
-     
-                            image_data = np_image_unwhitened(image_data)
-#                             self.__disp_image(image_data, shape_data, glabels_data, gbboxes_data)
-                            found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
-                            plt.show()
+                    while True:  
+                         
+                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
+                       
+                        print(filename)
+                        
+                         
+                         
+                        #selet the first image in the batch
+                        target_labels_data = [item[0] for item in gclasses]
+                        target_localizations_data = [item[0] for item in glocalisations]
+                        target_scores_data = [item[0] for item in gscores]
+                        image_data = image[0]
+ 
+                        image_data = np_image_unwhitened(image_data)
+                        self.__disp_image(image_data, glabels[0], gbboxes[0])
+                        found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
+                        plt.show()
                         #exit the batch data testing right after a successful match have been found
-                        if found_matched:
-                                break
+#                         if found_matched:
+                        #this could be a potential issue to be solved since sometime not all grouth truth bboxes are encoded.
+                        break
                             
                         
         

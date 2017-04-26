@@ -205,10 +205,10 @@ def run(dataset_dir, output_dir, name, shuffling=False):
         tf_filename = _get_dataset_filename(output_dir, name, shard_id, num_shard, records_num)
         with tf.python_io.TFRecordWriter(tf_filename) as tfrecord_writer:
             for i in range(start_ndx, end_ndx):
-                print('Converting image %d/%d shard %d' % (i+1, len(filenames), shard_id+1))
-        
-                #save the file to tfrecords
                 filename = filenames[i]
+                
+                print('Converting image %d/%d %s shard %d' % (i+1, len(filenames), filename[:-4], shard_id+1))
+                #save the file to tfrecords
                 _add_to_tfrecord(dataset_dir, filename[:-4], tfrecord_writer)
 
     # Finally, write the labels file:
@@ -221,14 +221,14 @@ if __name__ == "__main__":
 #     dataset_dir = "../../data/voc/2007_train/VOCdevkit/VOC2007/"
 #     output_dir = "../../data/voc/tfrecords/"
 #     name='voc_train_2007'
-
-    dataset_dir = "../../data/voc/2012_train/VOCdevkit/VOC2012/"
-    output_dir = "../../data/voc/tfrecords/"
-    name='voc_train_2012'
-    
-#     dataset_dir = "../../data/voc/2007_test/VOCdevkit/VOC2007/"
+ 
+#     dataset_dir = "../../data/voc/2012_train/VOCdevkit/VOC2012/"
 #     output_dir = "../../data/voc/tfrecords/"
-#     name='voc_test_2007'
+#     name='voc_train_2012'
+    
+    dataset_dir = "../../data/voc/2007_test/VOCdevkit/VOC2007/"
+    output_dir = "../../data/voc/tfrecords/"
+    name='voc_test_2007'
     
     run(dataset_dir, output_dir, name=name, shuffling=False)
     

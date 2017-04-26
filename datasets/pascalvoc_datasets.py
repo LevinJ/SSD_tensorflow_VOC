@@ -37,8 +37,8 @@ ITEMS_TO_DESCRIPTIONS = {
     'object/label': 'A list of labels, one per each object.',
 }
 DATASET_SIZE = {
-    '2007_test': 5011,
-    '2007_train': 4952,
+    '2007_test': 4952,
+    '2007_train': 5011,
     '2012_train': 17125
 }
 NUM_CLASSES = 20
