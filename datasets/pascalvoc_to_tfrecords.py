@@ -57,6 +57,7 @@ import xml.etree.ElementTree as ET
 
 from datasets.dataset_utils import int64_feature, float_feature, bytes_feature
 from datasets.pascalvoc_common import VOC_LABELS
+import math
 
 DIRECTORY_ANNOTATIONS = 'Annotations/'
 DIRECTORY_IMAGES = 'JPEGImages/'
@@ -183,37 +184,68 @@ def _add_to_tfrecord(dataset_dir, name, tfrecord_writer):
 def _get_output_filename(output_dir, name):
     return '%s/%s.tfrecord' % (output_dir, name)
 
+def _get_dataset_filename(dataset_dir, name, shard_id, num_shard, records_num):
+    output_filename = '%s_%05d-of-%05d-total%05d.tfrecord' % (name, shard_id + 1, num_shard,records_num)
+    return os.path.join(dataset_dir, output_filename)
 
-def run(dataset_dir, output_dir, name='voc_train', shuffling=False):
+def run(dataset_dir, output_dir, name, shuffling=False):
     """Runs the conversion operation.
 
     Args:
       dataset_dir: The dataset directory where the dataset is stored.
       output_dir: Output directory.
     """
-    if not tf.gfile.Exists(dataset_dir):
-        tf.gfile.MakeDirs(dataset_dir)
+    
 
-    tf_filename = _get_output_filename(output_dir, name)
-    if tf.gfile.Exists(tf_filename):
-        print('Dataset files already exist. Exiting without re-creating them.')
-        return
     # Dataset filenames, and shuffling.
     path = os.path.join(dataset_dir, DIRECTORY_ANNOTATIONS)
+    if not tf.gfile.Exists(path):
+        raise Exception("{} does not exist".format(path))
+    
     filenames = sorted(os.listdir(path))
     if shuffling:
         random.seed(12345)
         random.shuffle(filenames)
 
     # Process dataset files.
-    with tf.python_io.TFRecordWriter(tf_filename) as tfrecord_writer:
-        for i, filename in enumerate(filenames):
-            sys.stdout.write('\r>> Converting image %d/%d' % (i + 1, len(filenames)))
-            sys.stdout.flush()
-
-            _add_to_tfrecord(dataset_dir, filename[:-4], tfrecord_writer)
+    num_per_shard = 2000
+    num_shard = int(math.ceil(len(filenames) / float(num_per_shard)))
+    
+    for shard_id in range(num_shard):
+        start_ndx = shard_id * num_per_shard
+        end_ndx = min((shard_id+1) * num_per_shard, len(filenames))
+        records_num = end_ndx - start_ndx
+        tf_filename = _get_dataset_filename(output_dir, name, shard_id, num_shard, records_num)
+        with tf.python_io.TFRecordWriter(tf_filename) as tfrecord_writer:
+            for i in range(start_ndx, end_ndx):
+                print('Converting image %d/%d shard %d' % (i+1, len(filenames), shard_id+1))
+        
+                #save the file to tfrecords
+                filename = filenames[i]
+                _add_to_tfrecord(dataset_dir, filename[:-4], tfrecord_writer)
 
     # Finally, write the labels file:
     # labels_to_class_names = dict(zip(range(len(_CLASS_NAMES)), _CLASS_NAMES))
     # dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
     print('\nFinished converting the Pascal VOC dataset!')
+    
+    
+if __name__ == "__main__": 
+#     dataset_dir = "../../data/voc/2007_train/VOCdevkit/VOC2007/"
+#     output_dir = "../../data/voc/tfrecords/"
+#     name='voc_train_2007'
+
+    dataset_dir = "../../data/voc/2012_train/VOCdevkit/VOC2012/"
+    output_dir = "../../data/voc/tfrecords/"
+    name='voc_train_2012'
+    
+#     dataset_dir = "../../data/voc/2007_test/VOCdevkit/VOC2007/"
+#     output_dir = "../../data/voc/tfrecords/"
+#     name='voc_test_2007'
+    
+    run(dataset_dir, output_dir, name=name, shuffling=False)
+    
+    
+    
+    
+    

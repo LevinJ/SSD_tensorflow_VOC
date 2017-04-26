@@ -50,6 +50,11 @@ ITEMS_TO_DESCRIPTIONS = {
     'object/bbox': 'A list of bounding boxes, one per each object.',
     'object/label': 'A list of labels, one per each object.',
 }
+DATASET_SIZE = {
+    '2007_test': 5011,
+    '2007_train': 4952,
+    '2012_train': 17125
+}
 NUM_CLASSES = 20
 def get_dataset_info(data_sources, num_samples):
     """Gets a dataset tuple with instructions for reading Pascal VOC dataset.
