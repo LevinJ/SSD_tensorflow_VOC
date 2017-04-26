@@ -1,4 +1,6 @@
-from datasets import dataset_factory
+from datasets import pascalvoc_2007
+from datasets import pascalvoc_2012
+from datasets import pascalvoc_common
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import tensorflow.contrib.slim as slim
@@ -12,6 +14,7 @@ from preprocessing.ssd_vgg_preprocessing import np_image_unwhitened
 from preprocessing.ssd_vgg_preprocessing import preprocess_for_train
 from preprocessing.ssd_vgg_preprocessing import preprocess_for_eval
 import tf_utils
+import math
 
 
 
@@ -33,17 +36,15 @@ class PrepareData():
         else:
             image, labels, bboxes, _ = preprocess_for_eval(image, labels, bboxes, out_shape = out_shape)
         return image, labels, bboxes
-    def __get_images_labels_bboxes(self):
-        dataset = dataset_factory.get_dataset(
-                self.dataset_name, self.dataset_split_name, self.dataset_dir)
+    def __get_images_labels_bboxes(self,data_sources, num_samples,is_training_data):
         
-        self.dataset = dataset
-        
+        self.dataset = pascalvoc_common.get_dataset_info(data_sources, num_samples)
+        self.is_training_data = is_training_data
         if self.is_training_data:
             
             shuffle = True
             #make sure most samples can be fetched in one epoch
-            self.num_readers = 1
+            self.num_readers = len(self.dataset.data_sources)
         else:
             #make sure data is fetchd in sequence
             shuffle = False
@@ -51,7 +52,7 @@ class PrepareData():
             
         
         provider = slim.dataset_data_provider.DatasetDataProvider(
-                    dataset,
+                    self.dataset,
                     shuffle=shuffle,
                     num_readers=self.num_readers,
                     common_queue_capacity=30 * self.batch_size,
@@ -85,7 +86,7 @@ class PrepareData():
             self.num_preprocessing_threads = 1
         else:
             # to make sure data is fectched in sequence during evaluation
-            self.num_preprocessing_threads = 1
+            self.num_preprocessing_threads = len()
             
         #tf.train.batch accepts only list of tensors, this batch shape can used to
         #flatten the list in list, and later on convet it back to list in list.
@@ -145,50 +146,53 @@ class PrepareData():
             
         return found_matched
     def get_voc_2007_train_data(self,is_training_data=True):
-        self.dataset_name = 'pascalvoc_2007'
-        self.dataset_split_name = 'train'
-        self.dataset_dir = '../data/voc/tfrecords/'
-        self.is_training_data = is_training_data
-        
-        return self.__get_images_labels_bboxes()
+        data_sources = ["../data/voc/tfrecords/voc_2007_train.tfrecord"]
+        num_samples = pascalvoc_2007.SPLITS_TO_SIZES['train']
+       
+        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     
     def get_voc_2012_train_data(self,is_training_data=True):
-        self.dataset_name = 'pascalvoc_2012'
-        self.dataset_split_name = 'train'
-        self.dataset_dir = '../data/voc/tfrecords/'
-        self.is_training_data = is_training_data
+        data_sources = ["../data/voc/tfrecords/voc_2012_train.tfrecord"]
+        num_samples = pascalvoc_2012.SPLITS_TO_SIZES['train']
         
-        return self.__get_images_labels_bboxes()
+        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
+    
+    def get_voc_2007_2012_train_data(self,is_training_data=True):
+        data_sources = ["../data/voc/tfrecords/voc_2012_train.tfrecord","../data/voc/tfrecords/voc_2007_train.tfrecord"]
+        num_samples = pascalvoc_2012.SPLITS_TO_SIZES['train'] + pascalvoc_2007.SPLITS_TO_SIZES['train']
+        
+        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     def get_voc_2007_test_data(self):
-        self.dataset_name = 'pascalvoc_2007'
-        self.dataset_split_name = 'test'
-        self.dataset_dir = '../data/voc/tfrecords/'
-        self.is_training_data = False
+        data_sources = ["../data/voc/tfrecords/voc_2007_test.tfrecord"]
+        num_samples = pascalvoc_2007.SPLITS_TO_SIZES['test']
         
-        return self.__get_images_labels_bboxes()
+        return self.__get_images_labels_bboxes(data_sources, num_samples, False)
     
         
     def iterate_file_name(self):
         with tf.Graph().as_default():
-            batch_voc_2007_train = self.get_voc_2007_train_data()
-            batch_voc_2007_test = self.get_voc_2007_test_data()
-            batch_voc_2012_train = self.get_voc_2012_train_data()
+#             batch_data= self.get_voc_2007_train_data()
+#             batch_data = self.get_voc_2007_test_data()
+#             batch_data = self.get_voc_2012_train_data()
+            batch_data = self.get_voc_2007_2012_train_data()
+            num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):
-                    for i in range(155):
+                    for i in range(num_batches):
                         
-                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_voc_2007_test))
+                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
                         print(filename)
         return
     def run(self):
-#         return self.iterate_file_name()
+        return self.iterate_file_name()
         
         with tf.Graph().as_default():
             batch_voc_2007_train = self.get_voc_2007_train_data()
             batch_voc_2007_test = self.get_voc_2007_test_data()
             batch_voc_2012_train = self.get_voc_2012_train_data()
+            
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
