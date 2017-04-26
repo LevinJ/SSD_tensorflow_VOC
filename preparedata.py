@@ -1,5 +1,3 @@
-from datasets import pascalvoc_2007
-from datasets import pascalvoc_2012
 from datasets import pascalvoc_common
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -44,7 +42,7 @@ class PrepareData():
             
             shuffle = True
             #make sure most samples can be fetched in one epoch
-            self.num_readers = len(self.dataset.data_sources)
+            self.num_readers = 2
         else:
             #make sure data is fetchd in sequence
             shuffle = False
@@ -146,25 +144,25 @@ class PrepareData():
             
         return found_matched
     def get_voc_2007_train_data(self,is_training_data=True):
-        data_sources = ["../data/voc/tfrecords/voc_2007_train.tfrecord"]
-        num_samples = pascalvoc_2007.SPLITS_TO_SIZES['train']
+        data_sources = "../data/voc/tfrecords/voc_train_2007*.tfrecord"
+        num_samples = pascalvoc_common.DATASET_SIZE['2007_train']
        
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     
     def get_voc_2012_train_data(self,is_training_data=True):
-        data_sources = ["../data/voc/tfrecords/voc_2012_train.tfrecord"]
-        num_samples = pascalvoc_2012.SPLITS_TO_SIZES['train']
+        data_sources = "../data/voc/tfrecords/voc_train_2012*.tfrecord"
+        num_samples = pascalvoc_common.DATASET_SIZE['2012_train']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     
     def get_voc_2007_2012_train_data(self,is_training_data=True):
-        data_sources = ["../data/voc/tfrecords/voc_2012_train.tfrecord","../data/voc/tfrecords/voc_2007_train.tfrecord"]
-        num_samples = pascalvoc_2012.SPLITS_TO_SIZES['train'] + pascalvoc_2007.SPLITS_TO_SIZES['train']
+        data_sources = "../data/voc/tfrecords/voc_train*.tfrecord"
+        num_samples = pascalvoc_common.DATASET_SIZE['2007_train'] + pascalvoc_common.DATASET_SIZE['2012_train']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     def get_voc_2007_test_data(self):
-        data_sources = ["../data/voc/tfrecords/voc_2007_test.tfrecord"]
-        num_samples = pascalvoc_2007.SPLITS_TO_SIZES['test']
+        data_sources = "../data/voc/tfrecords/voc_test_2007*.tfrecord"
+        num_samples = pascalvoc_common.DATASET_SIZE['2007_test']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, False)
     
