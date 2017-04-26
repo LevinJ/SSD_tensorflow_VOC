@@ -752,10 +752,6 @@ class SSDModel():
             
             total_cross = tf.add(total_cross_pos, total_cross_neg, 'cross_entropy')
             
-            #debugging info
-            tf.summary.scalar("postive_num", n_positives)
-            tf.summary.scalar("negative_num", n_neg)
-            
             
             # Add to EXTRA LOSSES TF.collection
             tf.add_to_collection('EXTRA_LOSSES', total_cross_pos)
@@ -773,6 +769,23 @@ class SSDModel():
             
             #if model oss is zero, no need to do gradient update on this batch
             total_loss = array_ops.where(tf.equal(n_positives,0), array_ops.zeros_like(model_loss), tf.add(model_loss, regularization_loss))
+            
+            #debugging info
+            tf.summary.scalar("postive_num", n_positives)
+            tf.summary.scalar("negative_num", n_neg)
+            tf.summary.scalar("regularization_loss", regularization_loss)
+            selected_p = tf.boolean_mask(glocalisations, pmask)
+            p_mean, p_variance = tf.nn.moments(selected_p, [0])
+            tf.summary.scalar("mean_cx", p_mean[0])
+            tf.summary.scalar("mean_cy", p_mean[1])
+            tf.summary.scalar("mean_w", p_mean[2])
+            tf.summary.scalar("mean_h", p_mean[3])
+            
+            tf.summary.scalar("var_cx", p_variance[0])
+            tf.summary.scalar("var_cy", p_variance[1])
+            tf.summary.scalar("var_w", p_variance[2])
+            tf.summary.scalar("var_h", p_variance[3])
+            
             return total_loss
    
     
