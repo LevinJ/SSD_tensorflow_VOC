@@ -34,25 +34,32 @@ import numpy as np
 # print(codes[min_ind])
 
 
+
+
+def compute_jaccard(gt_bboxes, anchors):
+    inter_ymin = np.maximum(gt_bboxes[:,:,0], anchors[:,:,0])
+    inter_xmin = np.maximum(gt_bboxes[:,:,1], anchors[:,:,1])
+    inter_ymax = np.minimum(gt_bboxes[:,:,2], anchors[:,:,2])
+    inter_xmax = np.minimum(gt_bboxes[:,:,3], anchors[:,:,3])
+    
+    h = np.maximum(inter_ymax - inter_ymin, 0.)
+    w = np.maximum(inter_xmax - inter_xmin, 0.)
+    
+    inter_area = h * w
+    anchors_area = (anchors[:,:,3] - anchors[:,:,1]) * (anchors[:,:,2] - anchors[:,:,0])
+    gt_bboxes_area = (gt_bboxes[:,:,3] - gt_bboxes[:,:,1]) * (gt_bboxes[:,:,2] - gt_bboxes[:,:,0])
+    union_area = anchors_area - inter_area + gt_bboxes_area
+    jaccard = inter_area/union_area
+    print(jaccard)
+    return jaccard
+
 gt_bboxes = np.array([[0,0,1,2],[1,0,3,4]]).reshape((-1,1,4))
 
 anchors = np.array([[100,100,105,105],[2,1,3,3.5],[0,0,10,10]]).reshape((1,-1,4))
+jaccard = compute_jaccard(gt_bboxes, anchors)
 
 
-inter_ymin = np.maximum(gt_bboxes[:,:,0], anchors[:,:,0])
-inter_xmin = np.maximum(gt_bboxes[:,:,1], anchors[:,:,1])
-inter_ymax = np.minimum(gt_bboxes[:,:,2], anchors[:,:,2])
-inter_xmax = np.minimum(gt_bboxes[:,:,3], anchors[:,:,3])
 
-h = np.maximum(inter_ymax - inter_ymin, 0.)
-w = np.maximum(inter_xmax - inter_xmin, 0.)
-
-inter_area = h * w
-anchors_area = (anchors[:,:,3] - anchors[:,:,1]) * (anchors[:,:,2] - anchors[:,:,0])
-gt_bboxes_area = (gt_bboxes[:,:,3] - gt_bboxes[:,:,1]) * (gt_bboxes[:,:,2] - gt_bboxes[:,:,0])
-union_area = anchors_area - inter_area + gt_bboxes_area
-jaccard = inter_area/union_area
-print(jaccard)
 
 
 
