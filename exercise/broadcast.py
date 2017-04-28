@@ -92,7 +92,7 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
     gt_anchor_bboxes = np.hstack([gt_anchor_ymins.reshape(-1,1),gt_anchor_xmins.reshape(-1,1),gt_anchor_ymaxs.reshape(-1,1),gt_anchor_xmaxs.reshape(-1,1)])
     
     
-    
+    #match default boxes to any ground truth with jaccard overlap higher than a threshold (0.5).
     mask = np.max(jaccard, axis = 0) > matching_threshold
     mask_inds = np.argmax(jaccard, axis = 0)
     mask_inds = mask_inds[mask]
@@ -100,8 +100,7 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
     gt_anchor_bboxes[mask] = gt_bboxes[mask_inds]
     
     
-
-    
+    #matching each ground truth box to the default box with the best jaccard overlap
     inds = np.argmax(jaccard, axis = 1)
     
     gt_anchor_labels[inds] = gt_labels
@@ -114,7 +113,7 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
 
 gt_bboxes = np.array([[0,0,1,2],[1,0,3,4]]).reshape((-1,1,4))
 gt_labels = np.array([1,2])
-anchors = np.array([[100,100,105,105],[2,1,3,3.5],[0,0,10,10]]).reshape((1,-1,4))
+anchors = np.array([[100,100,105,105],[2,1,3,3.5],[0,0,10,10],[0.5,0.5,0.8,1.5]]).reshape((1,-1,4))
 
 
 jaccard = compute_jaccard(gt_bboxes, anchors)
