@@ -32,7 +32,6 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
     num_anchors= jaccard.shape[1]
 
     gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int32)
-    gt_anchor_scores = tf.zeros(num_anchors)
     gt_anchor_ymins = tf.zeros(num_anchors)
     gt_anchor_xmins = tf.zeros(num_anchors)
     gt_anchor_ymaxs = tf.ones(num_anchors)
@@ -47,22 +46,47 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
     gt_anchor_labels = tf.where(mask, matched_labels, gt_anchor_labels)
     gt_anchor_bboxes = tf.where(mask, tf.gather(gt_bboxes, mask_inds),gt_anchor_bboxes)
     gt_anchor_scores = tf.reduce_max(jaccard, axis= 0)
-#     mask_inds = tf.boolean_mask(mask_inds, mask)
-#     gt_anchor_labels[mask] = gt_labels[mask_inds]
-#     gt_anchor_bboxes[mask] = gt_bboxes[mask_inds]
-#     gt_anchor_scores[mask] = jaccard[mask_inds, mask]
+
     
     
     #matching each ground truth box to the default box with the best jaccard overlap
-    inds = tf.argmax(jaccard, axis = 1)
-    gt_anchor_labels[1] = 0
+    max_inds = tf.cast(tf.argmax(jaccard, axis=1),tf.int32)
+    def cond(i,gt_anchors_labels,gt_anchors_bboxes,gt_anchors_scores):
+        r = tf.less(i, tf.shape(gt_labels)[0])
+        return r
+    def body(i,gt_anchors_labels,gt_anchors_bboxes,gt_anchors_scores):
+        
+        #upate gt_anchors_labels
+        updates = tf.reshape(gt_labels[i], [-1])
+        indices = tf.reshape(max_inds[i],[1,-1])
+        shape = tf.reshape(tf.shape(gt_anchors_bboxes)[0],[-1])
+        
+        
+        new_labels = tf.scatter_nd(indices, updates, shape)
+        new_mask = tf.cast(new_labels, tf.bool)
+        gt_anchors_labels = tf.where(new_mask, new_labels, gt_anchors_labels)
+        
+        #update gt_anchors_bboxes
+        updates = tf.reshape(gt_bboxes[i], [1,-1])
+        indices = tf.reshape(max_inds[i],[1,-1])
+        shape = tf.shape(gt_anchors_bboxes)
+        new_bboxes = tf.scatter_nd(indices, updates, shape)
+        gt_anchors_bboxes = tf.where(new_mask, new_bboxes, gt_anchors_bboxes)
+        
+        #update gt_anchors_scores
+        updates = tf.reshape(jaccard[i, max_inds[i]], [-1])
+        indices = tf.reshape(max_inds[i],[1,-1])
+        shape = tf.reshape(tf.shape(gt_anchors_bboxes)[0],[-1])
+        new_scores = tf.scatter_nd(indices, updates, shape)
+        gt_anchors_scores = tf.where(new_mask, new_scores, gt_anchors_scores)
+        
+
+        
+        return [i+1,gt_anchors_labels,gt_anchors_bboxes,gt_anchors_scores]
     
-#     sel_lables = tf.gather(gt_anchor_labels, inds)
-#     sel_lables = gt_labels
     
-#     gt_anchor_labels[inds] = gt_labels
-    gt_anchor_bboxes[inds] = gt_bboxes
-    gt_anchor_scores[inds] = jaccard[range(jaccard.shape[0]),inds]
+    i = 0
+    [i,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores] = tf.while_loop(cond, body,[i,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores])
     
     # Transform to center / size.
     feat_cx = (gt_anchor_bboxes[:,3] + gt_anchor_bboxes[:,1]) / 2.
@@ -99,10 +123,10 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
 def test_anchor_matching():
     gt_bboxes = tf.constant([[0,0,1,2],[1,0,3,4],[100,100,105,102.5]])
     gt_labels = tf.constant([1,2,6])
-    anchors = tf.constant([[100,100,105,105],[2,1,3,3.5],[0,0,10,10],[0.5,0.5,0.8,1.5]])
+    anchors = tf.constant([[100,100,105,105],[2,1,3,3.5],[0,0,10,10],[0.5,0.5,0.8,1.5],[100,100,105,102.5]])
     
     jaccard = compute_jaccard(gt_bboxes, anchors)
-    gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = match_achors(gt_labels, gt_bboxes, anchors,jaccard,matching_threshold = 0.01)
+    gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = match_achors(gt_labels, gt_bboxes, anchors,jaccard,matching_threshold = 0.5)
     return gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores
 with tf.Graph().as_default():
     
@@ -114,6 +138,7 @@ with tf.Graph().as_default():
         gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = sess.run(r)
         print(gt_anchor_labels)
         
+
         
         
         
