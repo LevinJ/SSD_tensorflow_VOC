@@ -59,9 +59,12 @@ print(gt_anchors_labels)
 # print(codes[min_ind])
 
 
-
+prior_scaling=[0.1, 0.1, 0.2, 0.2] 
 
 def compute_jaccard(gt_bboxes, anchors):
+    
+    gt_bboxes = np.reshape(gt_bboxes, (-1,1,4))
+    anchors = np.reshape(anchors, (1,-1,4))
     inter_ymin = np.maximum(gt_bboxes[:,:,0], anchors[:,:,0])
     inter_xmin = np.maximum(gt_bboxes[:,:,1], anchors[:,:,1])
     inter_ymax = np.minimum(gt_bboxes[:,:,2], anchors[:,:,2])
@@ -83,13 +86,14 @@ def compute_jaccard(gt_bboxes, anchors):
 
 def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5):
     num_anchors= jaccard.shape[1]
-    gt_bboxes = np.squeeze(gt_bboxes)
+
     gt_anchor_labels = np.zeros(num_anchors)
+    gt_anchor_scores = np.zeros(num_anchors)
     gt_anchor_ymins = np.zeros(num_anchors)
     gt_anchor_xmins = np.zeros(num_anchors)
     gt_anchor_ymaxs = np.ones(num_anchors)
     gt_anchor_xmaxs = np.ones(num_anchors)
-    gt_anchor_bboxes = np.hstack([gt_anchor_ymins.reshape(-1,1),gt_anchor_xmins.reshape(-1,1),gt_anchor_ymaxs.reshape(-1,1),gt_anchor_xmaxs.reshape(-1,1)])
+    gt_anchor_bboxes = np.stack([gt_anchor_ymins,gt_anchor_xmins,gt_anchor_ymaxs,gt_anchor_xmaxs], axis=-1)
     
     
     #match default boxes to any ground truth with jaccard overlap higher than a threshold (0.5).
@@ -98,26 +102,49 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
     mask_inds = mask_inds[mask]
     gt_anchor_labels[mask] = gt_labels[mask_inds]
     gt_anchor_bboxes[mask] = gt_bboxes[mask_inds]
+    gt_anchor_scores = np.max(jaccard, axis= 0)
     
     
     #matching each ground truth box to the default box with the best jaccard overlap
     inds = np.argmax(jaccard, axis = 1)
     
     gt_anchor_labels[inds] = gt_labels
-    gt_anchor_bboxes[inds] = gt_bboxes[np.arange(len(inds))]
+    gt_anchor_bboxes[inds] = gt_bboxes
+    gt_anchor_scores[inds] = jaccard[np.arange(jaccard.shape[0]),inds]
+    
+    # Transform to center / size.
+    feat_cx = (gt_anchor_bboxes[:,3] + gt_anchor_bboxes[:,1]) / 2.
+    feat_cy = (gt_anchor_bboxes[:,2] + gt_anchor_bboxes[:,0]) / 2.
+    feat_w = gt_anchor_bboxes[:,3] - gt_anchor_bboxes[:,1]
+    feat_h = gt_anchor_bboxes[:,2] - gt_anchor_bboxes[:,0]
+    
+    xref = (anchors[:,3] + anchors[:,1]) / 2.
+    yref = (anchors[:,2] + anchors[:,0]) / 2.
+    wref = anchors[:,3] - anchors[:,1]
+    href = anchors[:,2] - anchors[:,0]
+    
+    
+    # Encode features, convert ground truth bboxes to  shape offset relative to default boxes 
+    feat_cx = (feat_cx - xref) / wref / prior_scaling[1]
+    feat_cy = (feat_cy - yref) / href / prior_scaling[0]
+    feat_w = np.log(feat_w / wref) / prior_scaling[3]
+    feat_h = np.log(feat_h / href) / prior_scaling[2]
+    
+    
+    gt_anchor_bboxes = np.stack([feat_cx, feat_cy, feat_w, feat_h], axis=-1)
     
     
     
     
-    return gt_anchor_labels, gt_anchor_bboxes
+    return gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores
 
-gt_bboxes = np.array([[0,0,1,2],[1,0,3,4]]).reshape((-1,1,4))
-gt_labels = np.array([1,2])
-anchors = np.array([[100,100,105,105],[2,1,3,3.5],[0,0,10,10],[0.5,0.5,0.8,1.5]]).reshape((1,-1,4))
+gt_bboxes = np.array([[0,0,1,2],[1,0,3,4],[100,100,105,102.5]])
+gt_labels = np.array([1,2,6])
+anchors = np.array([[100,100,105,105],[2,1,3,3.5],[0,0,10,10],[0.5,0.5,0.8,1.5]])
 
 
 jaccard = compute_jaccard(gt_bboxes, anchors)
-gt_anchor_bboxes = match_achors(gt_labels, gt_bboxes, anchors,jaccard,matching_threshold = 0.01)
+gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = match_achors(gt_labels, gt_bboxes, anchors,jaccard,matching_threshold = 0.01)
 print(gt_anchor_bboxes)
 
 
