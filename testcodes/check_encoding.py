@@ -65,15 +65,17 @@ class CheckEncoding(object):
         # Pre-processing image, labels and bboxes.
         self.image, self.glabels, self.gbboxes = self.__preprocess_data(image, glabels, gbboxes)
         
-        anchors = g_ssd_model.get_allanchors(minmaxformat=False)
+#         anchors_1 = g_ssd_model.get_allanchors(minmaxformat=False)
         anchors = g_ssd_model.get_allanchors(minmaxformat=True)
+        print(anchors[-1][-4:])
         #flattent the anchors
         temp_anchors = []
         for i in range(len(anchors)):
             temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
         anchors = tf.concat(temp_anchors, axis=0)
         
-        self.jaccard = self.compute_jaccard(self.gbboxes, anchors)
+        
+        self.jaccard = g_ssd_model.compute_jaccard(self.gbboxes, anchors)
 
         # Assign groundtruth information for all default/anchor boxes
 #         gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)

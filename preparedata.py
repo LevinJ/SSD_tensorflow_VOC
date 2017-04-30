@@ -68,7 +68,8 @@ class PrepareData():
         image, glabels, gbboxes = self.__preprocess_data(image, glabels, gbboxes)
 
         # Assign groundtruth information for all default/anchor boxes
-        gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
+#         gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
+        gclasses, glocalisations, gscores = g_ssd_model.match_achors(glabels, gbboxes)
         
         
         return self.__batching_data(image, glabels, format, filename, gbboxes, gdifficults, gclasses, glocalisations, gscores)
@@ -115,7 +116,7 @@ class PrepareData():
                 continue
             print('Found  {} matched default boxes in layer {}'.format(num_pos,g_ssd_model.feat_layers[i]))
             pos_sample_inds = (target_score_data > 0.5).nonzero()
-            pos_sample_inds = [pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
+#             pos_sample_inds = [pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
 
             classes = target_labels_data[i][pos_sample_inds]
             scores = target_scores_data[i][pos_sample_inds]

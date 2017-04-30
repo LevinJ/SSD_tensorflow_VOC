@@ -66,9 +66,9 @@ class SSDModel():
         
         # all of the computed anchors for this model, 
         # format: layer_number, numpy array format for x / y / w / h
-        self.__anchors = None
+        self.np__anchors = None
         #format: layer number, numpy format for ymin,xmin,ymax,xmax
-        self.__anchors_minmax = None
+        self.np_anchors_minmax = None
         self.model_name = 'ssd_300_vgg'
         
         #post processing
@@ -279,21 +279,22 @@ class SSDModel():
                     for s, d in zip(static_shape, dynamic_shape)]
                 
 
-    def get_allanchors(self, minmaxformat=False):
+    def get_allanchors_2(self, minmaxformat=False):
+        print("minmaxformat {}".format(minmaxformat))
         
-        if self.__anchors is not None:
+        if self.np__anchors is not None:
             if not minmaxformat:
                 #cache the anchors
                 #transform anchors into numpy array(h,w)
-                return self.__anchors
+                return self.np__anchors
             else:
                 #sometimes we might want to 
                 #display the anchors, so want them to in form of numpy array(per each layer)
-                if self.__anchors_minmax is not None:
-                    return self.__anchors_minmax
+                if self.np_anchors_minmax is not None:
+                    return self.np_anchors_minmax
                 num_anchors = 0
-                self.__anchors_minmax = []
-                for i, anchors_layer in enumerate(self.__anchors):
+                self.np_anchors_minmax = []
+                for i, anchors_layer in enumerate(self.np__anchors):
                     anchors = np.zeros_like(anchors_layer)
                     cx = anchors_layer[...,0]
                     cy = anchors_layer[...,1]
@@ -304,11 +305,11 @@ class SSDModel():
                     anchors[..., 2] = cy + h / 2.
                     anchors[..., 3] = cx + w / 2. 
                     num_anchors = num_anchors + anchors.size
-                    self.__anchors_minmax.append(anchors)
+                    self.np_anchors_minmax.append(anchors)
                 print("Anchor numbers: {}".format(num_anchors))
-                return self.__anchors_minmax
+                return self.np_anchors_minmax
         anchors = self.ssd_anchors_all_layers()
-        self.__anchors = []
+        self.np__anchors = []
         for _, anchors_layer in enumerate(anchors):
             yref, xref, href, wref = anchors_layer
             ymin = yref - href / 2.
@@ -324,9 +325,40 @@ class SSDModel():
             temp_achors = np.concatenate([cx,cy,w,h], axis = -1)
            
             #append achors for this layer
-            self.__anchors.append(temp_achors)
+            self.np__anchors.append(temp_achors)
        
-        return self.__anchors
+        return self.np__anchors
+    def get_allanchors(self, minmaxformat=False):
+        print("minmaxformat {}".format(minmaxformat))
+        
+        if self.np__anchors is None:
+            
+            anchors = self.ssd_anchors_all_layers()
+            self.np__anchors = []
+            self.np_anchors_minmax =[]
+            for _, anchors_layer in enumerate(anchors):
+                yref, xref, href, wref = anchors_layer
+                ymin = yref - href / 2.
+                xmin = xref - wref / 2.
+                ymax = yref + href / 2
+                xmax = xref + wref / 2.
+                
+                temp_achors = np.concatenate([ymin[...,np.newaxis],xmin[...,np.newaxis],ymax[...,np.newaxis],xmax[...,np.newaxis]], axis = -1)
+                self.np_anchors_minmax.append(temp_achors)
+                
+                # Transform to center / size.
+                cy = (ymax + ymin) / 2.
+                cx = (xmax + xmin) / 2.
+                h = ymax - ymin
+                w = xmax - xmin
+                temp_achors = np.concatenate([cx[...,np.newaxis],cy[...,np.newaxis],w[...,np.newaxis],h[...,np.newaxis]], axis = -1)
+               
+                #append achors for this layer
+                self.np__anchors.append(temp_achors)
+        if  minmaxformat:
+            return self.np_anchors_minmax
+        else:
+            return self.np__anchors
     def detected_bboxes(self, predictions, localisations,
                         clipping_bbox=None):
         """Get the detected bounding boxes from the SSD network output.
@@ -471,7 +503,7 @@ class SSDModel():
         gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = self.__convert2layers(gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores)
         
         return gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores
-    def __convert2layers(self,gdifficults,gclasses, glocalisations, gscores):
+    def __convert2layers(self,gclasses, glocalisations, gscores):
         gt_anchor_labels = []
         gt_anchor_bboxes = []
         gt_anchor_scores = []
@@ -490,7 +522,7 @@ class SSDModel():
             
             gt_anchor_labels.append(tf.reshape(gclasses[start:end],anchor_shape))
             gt_anchor_scores.append(tf.reshape(gscores[start:end],anchor_shape))
-            gt_anchor_bboxes.append(tf.reshape(gscores[start:end],anchor_shape + [4]))
+            gt_anchor_bboxes.append(tf.reshape(glocalisations[start:end],anchor_shape + [4]))
             
             
             
