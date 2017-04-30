@@ -16,12 +16,11 @@ import math
 
 
 
-class PrepareData():
+class CheckEncoding(object):
     def __init__(self):
         
         self.batch_size = 32
-        self.labels_offset = 0
-      
+        
         
        
         
@@ -57,47 +56,31 @@ class PrepareData():
                     common_queue_min=10 * self.batch_size)
         
         # Get for SSD network: image, labels, bboxes.
-        [image, shape, format, filename, glabels, gbboxes,gdifficults] = provider.get(['image', 'shape', 'format','filename',
+        [image, shape, format, self.filename, glabels, gbboxes,gdifficults] = provider.get(['image', 'shape', 'format','filename',
                                                          'object/label',
                                                          'object/bbox',
                                                          'object/difficult'])
-        glabels -= self.labels_offset
         
         
         # Pre-processing image, labels and bboxes.
-        image, glabels, gbboxes = self.__preprocess_data(image, glabels, gbboxes)
+        self.image, self.glabels, self.gbboxes = self.__preprocess_data(image, glabels, gbboxes)
+        
+        anchors = g_ssd_model.get_allanchors(minmaxformat=False)
+        anchors = g_ssd_model.get_allanchors(minmaxformat=True)
+        #flattent the anchors
+        temp_anchors = []
+        for i in range(len(anchors)):
+            temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
+        anchors = tf.concat(temp_anchors, axis=0)
+        
+        self.jaccard = self.compute_jaccard(self.gbboxes, anchors)
 
         # Assign groundtruth information for all default/anchor boxes
-        gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
+#         gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
         
         
-        return self.__batching_data(image, glabels, format, filename, gbboxes, gdifficults, gclasses, glocalisations, gscores)
-    def __batching_data(self,image, glabels, format, filename, gbboxes, gdifficults,gclasses, glocalisations, gscores):
-        
-        #we will want to batch original glabels and gbboxes
-        #this information is still useful even if they are padded after dequeuing
-        dynamic_pad = True
-        batch_shape = [1,1,1,1,1] + [len(gclasses), len(glocalisations), len(gscores)]
-        tensors = [image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
-        #Batch the samples
-        if self.is_training_data:
-            self.num_preprocessing_threads = 1
-        else:
-            # to make sure data is fectched in sequence during evaluation
-            self.num_preprocessing_threads = 2
-            
-        #tf.train.batch accepts only list of tensors, this batch shape can used to
-        #flatten the list in list, and later on convet it back to list in list.
-        batch = tf.train.batch(
-                tf_utils.reshape_list(tensors),
-                batch_size=self.batch_size,
-                num_threads=self.num_preprocessing_threads,
-                dynamic_pad=dynamic_pad,
-                capacity=5 * self.batch_size)
-            
-        #convert it back to the list in list format which allows us to easily use later on
-        batch= tf_utils.reshape_list(batch, batch_shape)
-        return batch
+        return
+    
     def __disp_image(self, img, classes, bboxes):
         bvalid = (classes !=0)
         classes = classes[bvalid]
@@ -146,81 +129,41 @@ class PrepareData():
             found_matched = True  
             
         return found_matched
-    def get_voc_2007_train_data(self,is_training_data=True):
-        data_sources = "../data/voc/tfrecords/voc_train_2007*.tfrecord"
-        num_samples = pascalvoc_datasets.DATASET_SIZE['2007_train']
-       
-        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
-    
-    def get_voc_2012_train_data(self,is_training_data=True):
-        data_sources = "../data/voc/tfrecords/voc_train_2012*.tfrecord"
-        num_samples = pascalvoc_datasets.DATASET_SIZE['2012_train']
-        
-        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
-    
-    def get_voc_2007_2012_train_data(self,is_training_data=True):
-        data_sources = "../data/voc/tfrecords/voc_train*.tfrecord"
-        num_samples = pascalvoc_datasets.DATASET_SIZE['2007_train'] + pascalvoc_datasets.DATASET_SIZE['2012_train']
-        
-        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
+   
     def get_voc_2007_test_data(self):
-        data_sources = "../data/voc/tfrecords/voc_test_2007*.tfrecord"
+        data_sources = "../../data/voc/tfrecords/voc_test_2007*.tfrecord"
         num_samples = pascalvoc_datasets.DATASET_SIZE['2007_test']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, False)
-    
-        
-    def iterate_file_name(self, batch_data):
-        
-        num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
-        with tf.Session('') as sess:
-            init = tf.global_variables_initializer()
-            sess.run(init)
-            with slim.queues.QueueRunners(sess):
-                for i in range(num_batches):
-                    
-                    image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
-                    print(filename)
-        return
+ 
     def run(self):
         
         
         with tf.Graph().as_default():
-#             batch_data= self.get_voc_2007_train_data()
-            batch_data = self.get_voc_2007_test_data()
-#             batch_data = self.get_voc_2012_train_data()
-#             batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
-
-
-#             return self.iterate_file_name(batch_data)
-           
+            self.get_voc_2007_test_data()
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):  
-                    while True:  
+                     
                          
-                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
-                       
-                        print(filename)
-                        
-                         
-                         
-                        #selet the first image in the batch
-                        target_labels_data = [item[0] for item in gclasses]
-                        target_localizations_data = [item[0] for item in glocalisations]
-                        target_scores_data = [item[0] for item in gscores]
-                        image_data = image[0]
- 
-                        image_data = np_image_unwhitened(image_data)
-                        self.__disp_image(image_data, glabels[0], gbboxes[0])
-                        found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
-                        plt.show()
-                        #exit the batch data testing right after a successful match have been found
-#                         if found_matched:
-                        #this could be a potential issue to be solved since sometime not all grouth truth bboxes are encoded.
-                        break
-                            
+                    image, glabels, gbboxes,filename,jaccard= sess.run([self.image, self.glabels, self.gbboxes,self.filename,self.jaccard])
+                    
+                    print(filename)
+                    print(glabels)
+                    print(gbboxes)
+                    print(jaccard)
+                    
+                     
+                     
+                    #selet the first image in the batch
+                    
+                    
+                    image_data = np_image_unwhitened(image)
+                    self.__disp_image(image_data, glabels, gbboxes)
+                    #                         found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
+                    plt.show()
+
                         
         
         
@@ -231,5 +174,5 @@ class PrepareData():
 
 
 if __name__ == "__main__":   
-    obj= PrepareData()
+    obj= CheckEncoding()
     obj.run()

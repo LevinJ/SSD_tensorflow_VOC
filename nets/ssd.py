@@ -279,7 +279,7 @@ class SSDModel():
                     for s, d in zip(static_shape, dynamic_shape)]
                 
 
-    def get_all_anchors(self, minmaxformat=False):
+    def get_allanchors(self, minmaxformat=False):
         
         if self.__anchors is not None:
             if not minmaxformat:
@@ -356,7 +356,7 @@ class SSDModel():
         return ssd_common.tf_ssd_bboxes_decode(
             feat_localizations, anchors,
             prior_scaling=self.prior_scaling)
-    def __compute_jaccard(self, gt_bboxes, anchors):
+    def compute_jaccard(self, gt_bboxes, anchors):
     
         gt_bboxes = tf.reshape(gt_bboxes, (-1,1,4))
         anchors = tf.reshape(anchors, (1,-1,4))
@@ -379,14 +379,14 @@ class SSDModel():
     
     def match_achors(self, gt_labels, gt_bboxes, matching_threshold = 0.5):
         
-        anchors = self.get_all_anchors(minmaxformat=True)
+        anchors = self.get_allanchors(minmaxformat=True)
         #flattent the anchors
         temp_anchors = []
         for i in range(len(anchors)):
             temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
         anchors = tf.concat(temp_anchors, axis=0)
         
-        jaccard = self.__compute_jaccard(gt_bboxes, anchors)
+        jaccard = self.compute_jaccard(gt_bboxes, anchors)
         num_anchors= jaccard.shape[1]
     
         gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int64)
@@ -468,8 +468,32 @@ class SSDModel():
         gt_anchor_bboxes = tf.stack([feat_cx, feat_cy, feat_w, feat_h], axis=-1)
         
         
+        gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = self.__convert2layers(gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores)
         
+        return gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores
+    def __convert2layers(self,gdifficults,gclasses, glocalisations, gscores):
+        gt_anchor_labels = []
+        gt_anchor_bboxes = []
+        gt_anchor_scores = []
         
+        anchors = self.get_allanchors(minmaxformat = False)
+        
+        start = 0
+        end = 0
+        
+        for i in range(len(anchors)):
+            anchor_shape = anchors[i].shape[:-1]
+            anchor_shape = list(anchor_shape)
+            anchor_num = np.array(anchor_shape).prod()
+            start = end
+            end = start + anchor_num
+            
+            gt_anchor_labels.append(tf.reshape(gclasses[start:end],anchor_shape))
+            gt_anchor_scores.append(tf.reshape(gscores[start:end],anchor_shape))
+            gt_anchor_bboxes.append(tf.reshape(gscores[start:end],anchor_shape + [4]))
+            
+            
+            
         return gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores
         
     def decode_bboxes_all_layers(self, localizations):
@@ -480,7 +504,7 @@ class SSDModel():
           numpy array BatchesxHxWx4: ymin, xmin, ymax, xmax
         """
         decoded_bboxes = []
-        all_anchors = self.get_all_anchors()
+        all_anchors = self.get_allanchors()
         for i in range(len(localizations)):
             decoded_bboxes.append(self.decode_bboxes_layer(localizations[i], all_anchors[i]))
         
