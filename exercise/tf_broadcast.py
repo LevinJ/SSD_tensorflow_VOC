@@ -5,6 +5,7 @@ import tensorflow as tf
 
 
 
+
 prior_scaling=[0.1, 0.1, 0.2, 0.2] 
 
 def compute_jaccard(gt_bboxes, anchors):
@@ -28,7 +29,9 @@ def compute_jaccard(gt_bboxes, anchors):
     
     return jaccard
 
-def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5):
+def match_achors(gt_labels, gt_bboxes, anchors, matching_threshold = 0.5):
+    
+    jaccard = compute_jaccard(gt_bboxes, anchors)
     num_anchors= jaccard.shape[1]
 
     gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int32)
@@ -59,7 +62,7 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
         #upate gt_anchors_labels
         updates = tf.reshape(gt_labels[i], [-1])
         indices = tf.reshape(max_inds[i],[1,-1])
-        shape = tf.reshape(tf.shape(gt_anchors_bboxes)[0],[-1])
+        shape = tf.reshape(num_anchors,[-1])
         
         
         new_labels = tf.scatter_nd(indices, updates, shape)
@@ -76,7 +79,7 @@ def match_achors(gt_labels, gt_bboxes, anchors,jaccard, matching_threshold = 0.5
         #update gt_anchors_scores
         updates = tf.reshape(jaccard[i, max_inds[i]], [-1])
         indices = tf.reshape(max_inds[i],[1,-1])
-        shape = tf.reshape(tf.shape(gt_anchors_bboxes)[0],[-1])
+        shape = tf.reshape(num_anchors,[-1])
         new_scores = tf.scatter_nd(indices, updates, shape)
         gt_anchors_scores = tf.where(new_mask, new_scores, gt_anchors_scores)
         
@@ -125,8 +128,7 @@ def test_anchor_matching():
     gt_labels = tf.constant([1,2,6])
     anchors = tf.constant([[100,100,105,105],[2,1,3,3.5],[0,0,10,10],[0.5,0.5,0.8,1.5],[100,100,105,102.5]])
     
-    jaccard = compute_jaccard(gt_bboxes, anchors)
-    gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = match_achors(gt_labels, gt_bboxes, anchors,jaccard,matching_threshold = 0.5)
+    gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores = match_achors(gt_labels, gt_bboxes, anchors,matching_threshold = 0.5)
     return gt_anchor_labels, gt_anchor_bboxes,gt_anchor_scores
 with tf.Graph().as_default():
     
