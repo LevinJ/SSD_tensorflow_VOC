@@ -329,7 +329,7 @@ class SSDModel():
        
         return self.np__anchors
     def get_allanchors(self, minmaxformat=False):
-        print("minmaxformat {}".format(minmaxformat))
+#         print("minmaxformat {}".format(minmaxformat))
         
         if self.np__anchors is None:
             

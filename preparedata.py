@@ -19,8 +19,11 @@ import math
 class PrepareData():
     def __init__(self):
         
-        self.batch_size = 32
+        self.batch_size = 1
         self.labels_offset = 0
+        
+        
+        self.matched_thresholds = 0.98
       
         
        
@@ -69,7 +72,7 @@ class PrepareData():
 
         # Assign groundtruth information for all default/anchor boxes
 #         gclasses, glocalisations, gscores = g_ssd_model.tf_ssd_bboxes_encode(glabels, gbboxes)
-        gclasses, glocalisations, gscores = g_ssd_model.match_achors(glabels, gbboxes)
+        gclasses, glocalisations, gscores = g_ssd_model.match_achors(glabels, gbboxes, matching_threshold=self.matched_thresholds)
         
         
         return self.__batching_data(image, glabels, format, filename, gbboxes, gdifficults, gclasses, glocalisations, gscores)
@@ -111,15 +114,18 @@ class PrepareData():
         all_anchors = g_ssd_model.get_allanchors()
         for i, target_score_data in enumerate(target_scores_data):
 
-            num_pos = (target_score_data > 0.5).sum()
+            num_pos = (target_labels_data[i] != 0).sum()
             if (num_pos == 0):
                 continue
             print('Found  {} matched default boxes in layer {}'.format(num_pos,g_ssd_model.feat_layers[i]))
-            pos_sample_inds = (target_score_data > 0.5).nonzero()
-#             pos_sample_inds = [pos_sample_inds[0],pos_sample_inds[1],pos_sample_inds[2]]
+#             pos_sample_inds = ((target_labels_data[i] != 0) & (target_score_data <=self.matched_thresholds)).nonzero()
+            pos_sample_inds = (target_labels_data[i] != 0).nonzero()
+
 
             classes = target_labels_data[i][pos_sample_inds]
             scores = target_scores_data[i][pos_sample_inds]
+            print("matched scores :{}".format(scores))
+            print("matched labels: {}".format(classes))
             bboxes_default= g_ssd_model.get_allanchors(minmaxformat=True)[i][pos_sample_inds]
             
             
@@ -127,7 +133,7 @@ class PrepareData():
             bboxes_gt = g_ssd_model.decode_bboxes_layer(target_localizations_data[i][pos_sample_inds], 
                                        all_anchors[i][pos_sample_inds])
             
-            print("default box minimum, {} gt box minimum, {}".format(bboxes_default.min(), bboxes_gt.min()))
+#             print("default box minimum, {} gt box minimum, {}".format(bboxes_default.min(), bboxes_gt.min()))
             
             marks_default = np.full(classes.shape, True)
             marks_gt = np.full(classes.shape, False)
@@ -183,6 +189,25 @@ class PrepareData():
                     image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
                     print(filename)
         return
+    def check_match_statistics(self,filename,gclasses, gscores):
+        #flatten the array into Batch_num x bbox_num
+        gt_anchor_labels = []
+        gt_anchor_scores = []
+        for i in range(len(gclasses)):
+            gt_anchor_labels.append(np.reshape(gclasses[i], [self.batch_size, -1]))
+            gt_anchor_scores.append(np.reshape(gscores[i], [self.batch_size,-1]))
+        gt_anchor_labels = np.concatenate(gt_anchor_labels, axis = 1)
+        gt_anchor_scores = np.concatenate(gt_anchor_scores, axis = 1)
+        
+        #find out missed match
+        inds = (gt_anchor_scores <= self.matched_thresholds) & (gt_anchor_labels != 0)
+        
+        real_inds = inds.nonzero()
+
+        print("missed match: {}".format(filename[real_inds[0]]))
+        print("missed match scores: {}".format(gt_anchor_scores[real_inds]))
+        print("missed match labels: {}".format(gt_anchor_labels[real_inds]))
+        return
     def run(self):
         
         
@@ -202,19 +227,23 @@ class PrepareData():
                     while True:  
                          
                         image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
+                        
+                        self.check_match_statistics(filename, gclasses, gscores)
                        
                         print(filename)
                         
                          
                          
                         #selet the first image in the batch
-                        target_labels_data = [item[0] for item in gclasses]
-                        target_localizations_data = [item[0] for item in glocalisations]
-                        target_scores_data = [item[0] for item in gscores]
-                        image_data = image[0]
+                        picked_inds = 0
+                        target_labels_data = [item[picked_inds] for item in gclasses]
+                        target_localizations_data = [item[picked_inds] for item in glocalisations]
+                        target_scores_data = [item[picked_inds] for item in gscores]
+                        image_data = image[picked_inds]
+                        print("picked file {}".format(filename[picked_inds]))
  
                         image_data = np_image_unwhitened(image_data)
-                        self.__disp_image(image_data, glabels[0], gbboxes[0])
+                        self.__disp_image(image_data, glabels[picked_inds], gbboxes[picked_inds])
                         found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                         plt.show()
                         #exit the batch data testing right after a successful match have been found
