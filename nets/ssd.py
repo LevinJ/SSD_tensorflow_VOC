@@ -482,7 +482,7 @@ class SSDModel():
         
         
         #matching each ground truth box to the default box with the best jaccard overlap
-        use_no_miss = False
+        use_no_miss = True
         if use_no_miss:
             gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores = self.__match_no_miss(gt_anchor_labels, \
                                                                                       gt_anchor_bboxes, gt_anchor_scores, jaccard, \
