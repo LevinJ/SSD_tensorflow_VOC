@@ -409,37 +409,8 @@ class SSDModel():
         
         return jaccard
     
-    def match_achors(self, gt_labels, gt_bboxes, matching_threshold = 0.5):
-        
-        anchors = self.get_allanchors(minmaxformat=True)
-        #flattent the anchors
-        temp_anchors = []
-        for i in range(len(anchors)):
-            temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
-        anchors = tf.concat(temp_anchors, axis=0)
-        
-        jaccard = self.compute_jaccard(gt_bboxes, anchors)
-        num_anchors= jaccard.shape[1]
-    
-        gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int64)
-        gt_anchor_ymins = tf.zeros(num_anchors)
-        gt_anchor_xmins = tf.zeros(num_anchors)
-        gt_anchor_ymaxs = tf.ones(num_anchors)
-        gt_anchor_xmaxs = tf.ones(num_anchors)
-        gt_anchor_bboxes = tf.stack([gt_anchor_ymins,gt_anchor_xmins,gt_anchor_ymaxs,gt_anchor_xmaxs], axis=-1)
-        
-        
-        #match default boxes to any ground truth with jaccard overlap higher than a threshold (0.5).
-        mask = tf.reduce_max (jaccard, axis = 0) > matching_threshold
-        mask_inds = tf.argmax(jaccard, axis = 0)
-        matched_labels = tf.gather(gt_labels, mask_inds)
-        gt_anchor_labels = tf.where(mask, matched_labels, gt_anchor_labels)
-        gt_anchor_bboxes = tf.where(mask, tf.gather(gt_bboxes, mask_inds),gt_anchor_bboxes)
-        gt_anchor_scores = tf.reduce_max(jaccard, axis= 0)
-    
-        
-        
-        #matching each ground truth box to the default box with the best jaccard overlap
+    def __match_no_miss(self,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores,jaccard,gt_labels,gt_bboxes, num_anchors):
+        #make sure every ground truth box can be matched to at least one anchor box
         max_inds = tf.cast(tf.argmax(jaccard, axis=1),tf.int32)
         def cond(i,gt_anchors_labels,gt_anchors_bboxes,gt_anchors_scores):
             r = tf.less(i, tf.shape(gt_labels)[0])
@@ -477,6 +448,45 @@ class SSDModel():
         
         i = 0
         [i,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores] = tf.while_loop(cond, body,[i,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores])
+        
+        return gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores
+    
+    def match_achors(self, gt_labels, gt_bboxes, matching_threshold = 0.5):
+        
+        anchors = self.get_allanchors(minmaxformat=True)
+        #flattent the anchors
+        temp_anchors = []
+        for i in range(len(anchors)):
+            temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
+        anchors = tf.concat(temp_anchors, axis=0)
+        
+        jaccard = self.compute_jaccard(gt_bboxes, anchors)
+        num_anchors= jaccard.shape[1]
+    
+        gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int64)
+        gt_anchor_ymins = tf.zeros(num_anchors)
+        gt_anchor_xmins = tf.zeros(num_anchors)
+        gt_anchor_ymaxs = tf.ones(num_anchors)
+        gt_anchor_xmaxs = tf.ones(num_anchors)
+        gt_anchor_bboxes = tf.stack([gt_anchor_ymins,gt_anchor_xmins,gt_anchor_ymaxs,gt_anchor_xmaxs], axis=-1)
+        
+        
+        #match default boxes to any ground truth with jaccard overlap higher than a threshold (0.5).
+        mask = tf.reduce_max (jaccard, axis = 0) > matching_threshold
+        mask_inds = tf.argmax(jaccard, axis = 0)
+        matched_labels = tf.gather(gt_labels, mask_inds)
+        gt_anchor_labels = tf.where(mask, matched_labels, gt_anchor_labels)
+        gt_anchor_bboxes = tf.where(mask, tf.gather(gt_bboxes, mask_inds),gt_anchor_bboxes)
+        gt_anchor_scores = tf.reduce_max(jaccard, axis= 0)
+    
+        
+        
+        #matching each ground truth box to the default box with the best jaccard overlap
+        use_no_miss = False
+        if use_no_miss:
+            gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores = self.__match_no_miss(gt_anchor_labels, \
+                                                                                      gt_anchor_bboxes, gt_anchor_scores, jaccard, \
+                                                                                      gt_labels, gt_bboxes, num_anchors)
         
         # Transform to center / size.
         feat_cx = (gt_anchor_bboxes[:,3] + gt_anchor_bboxes[:,1]) / 2.
@@ -847,7 +857,7 @@ class SSDModel():
         with tf.name_scope(scope, 'ssd_losses'):
             lshape = tfe.get_shape(logits[0], 5)
             num_classes = lshape[-1]
-            batch_size = lshape[0]
+#             batch_size = lshape[0]
     
             # Flatten out all vectors!
             flogits = []
@@ -870,7 +880,7 @@ class SSDModel():
             dtype = logits.dtype
     
             # Compute positive matching mask...
-            pmask = gscores > match_threshold
+            pmask = gclasses > 0
             fpmask = tf.cast(pmask, dtype)
             n_positives = tf.reduce_sum(fpmask)
     
@@ -879,8 +889,8 @@ class SSDModel():
             #this is why pmask sufice our needs
             no_classes = tf.cast(pmask, tf.int32)
             predictions = slim.softmax(logits)
-            nmask = tf.logical_and(tf.logical_not(pmask),
-                                   gscores > -0.5)
+            nmask = tf.logical_not(pmask)
+            
             fnmask = tf.cast(nmask, dtype)
             nvalues = tf.where(nmask,
                                predictions[:, 0],

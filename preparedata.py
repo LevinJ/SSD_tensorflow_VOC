@@ -19,11 +19,11 @@ import math
 class PrepareData():
     def __init__(self):
         
-        self.batch_size = 1
+        self.batch_size = 32
         self.labels_offset = 0
         
         
-        self.matched_thresholds = 0.98
+        self.matched_thresholds = 0.5 #threshold for anchor matching strategy
       
         
        
