@@ -278,11 +278,11 @@ def preprocess_for_train(image, labels, bboxes,
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
 
         # Randomly distort the colors. There are 4 ways to do it.
-#         dst_image = apply_with_random_selector(
-#                 dst_image,
-#                 lambda x, ordering: distort_color(x, ordering, fast_mode),
-#                 num_cases=4)
-#         tf_summary_image(dst_image, bboxes, 'image_color_distorted')
+        dst_image = apply_with_random_selector(
+                dst_image,
+                lambda x, ordering: distort_color(x, ordering, fast_mode),
+                num_cases=4)
+        tf_summary_image(dst_image, bboxes, 'image_color_distorted')
 
         # Rescale to VGG input scale.
         image = dst_image * 255.
