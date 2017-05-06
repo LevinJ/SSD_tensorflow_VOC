@@ -265,9 +265,9 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Distort image and bounding boxes.
         dst_image = image
-#         dst_image, labels, bboxes, distort_bbox = \
-#             distorted_bounding_box_crop(image, labels, bboxes,
-#                                         aspect_ratio_range=CROP_RATIO_RANGE)
+        dst_image, labels, bboxes, distort_bbox = \
+            distorted_bounding_box_crop(dst_image, labels, bboxes,
+                                        aspect_ratio_range=CROP_RATIO_RANGE)
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,

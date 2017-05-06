@@ -451,26 +451,13 @@ class SSDModel():
         
         return gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores
     
-    def match_achors(self, gt_labels, gt_bboxes, matching_threshold = 0.5):
+    def __match_no_labels(self,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores,jaccard,matching_threshold,gt_labels,gt_bboxes,num_anchors):
+        #For images without labels, just return all zero tensors
         
-        anchors = self.get_allanchors(minmaxformat=True)
-        #flattent the anchors
-        temp_anchors = []
-        for i in range(len(anchors)):
-            temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
-        anchors = tf.concat(temp_anchors, axis=0)
-        
-        jaccard = self.compute_jaccard(gt_bboxes, anchors)
-        num_anchors= jaccard.shape[1]
-    
-        gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int64)
-        gt_anchor_ymins = tf.zeros(num_anchors)
-        gt_anchor_xmins = tf.zeros(num_anchors)
-        gt_anchor_ymaxs = tf.ones(num_anchors)
-        gt_anchor_xmaxs = tf.ones(num_anchors)
-        gt_anchor_bboxes = tf.stack([gt_anchor_ymins,gt_anchor_xmins,gt_anchor_ymaxs,gt_anchor_xmaxs], axis=-1)
-        
-        
+        return gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores
+    def __match_with_labels(self,gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores,jaccard,matching_threshold,gt_labels,gt_bboxes,num_anchors):
+        #debugging info
+        #jaccard = tf.Print(jaccard, [gt_labels], "gt_labels")
         #match default boxes to any ground truth with jaccard overlap higher than a threshold (0.5).
         mask = tf.reduce_max (jaccard, axis = 0) > matching_threshold
         mask_inds = tf.argmax(jaccard, axis = 0)
@@ -487,6 +474,37 @@ class SSDModel():
             gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores = self.__match_no_miss(gt_anchor_labels, \
                                                                                       gt_anchor_bboxes, gt_anchor_scores, jaccard, \
                                                                                       gt_labels, gt_bboxes, num_anchors)
+        
+        return gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores
+    
+    def match_achors(self, gt_labels, gt_bboxes, matching_threshold = 0.5):
+        
+        anchors = self.get_allanchors(minmaxformat=True)
+        #flattent the anchors
+        temp_anchors = []
+        for i in range(len(anchors)):
+            temp_anchors.append(tf.reshape(anchors[i], [-1, 4]))
+        anchors = tf.concat(temp_anchors, axis=0)
+        
+        jaccard = self.compute_jaccard(gt_bboxes, anchors)
+        num_anchors= jaccard.shape[1]
+        
+        
+        #initialize output
+        gt_anchor_labels = tf.zeros(num_anchors, dtype=tf.int64)
+        gt_anchor_scores = tf.zeros(num_anchors, dtype=tf.float32)
+        gt_anchor_ymins = tf.zeros(num_anchors)
+        gt_anchor_xmins = tf.zeros(num_anchors)
+        gt_anchor_ymaxs = tf.ones(num_anchors)
+        gt_anchor_xmaxs = tf.ones(num_anchors)
+        gt_anchor_bboxes = tf.stack([gt_anchor_ymins,gt_anchor_xmins,gt_anchor_ymaxs,gt_anchor_xmaxs], axis=-1)
+        
+        n__glabels = tf.size(gt_labels)
+        gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores = tf.cond(tf.equal(n__glabels, 0), \
+                                                                     lambda: self.__match_no_labels(gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores,jaccard,matching_threshold,gt_labels,gt_bboxes,num_anchors), \
+                                                                     lambda: self.__match_with_labels(gt_anchor_labels,gt_anchor_bboxes,gt_anchor_scores,jaccard,matching_threshold,gt_labels,gt_bboxes,num_anchors))
+        
+        
         
         # Transform to center / size.
         feat_cx = (gt_anchor_bboxes[:,3] + gt_anchor_bboxes[:,1]) / 2.
