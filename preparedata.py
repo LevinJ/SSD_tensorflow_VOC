@@ -229,6 +229,10 @@ class PrepareData():
                         image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
                         
                         self.check_match_statistics(filename, gclasses, gscores)
+                        
+#                         print(glabels)
+#                         print("number of zero label patch {}".format((glabels.sum(axis=1)  == 0).sum()))
+#                         return
                        
                         print(filename)
                         

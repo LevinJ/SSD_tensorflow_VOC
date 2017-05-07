@@ -175,10 +175,10 @@ def distort_color(image, color_ordering=0, fast_mode=True, scope=None):
 def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
-                                min_object_covered=0.05,
-                                aspect_ratio_range=(0.9, 1.1),
+                                min_object_covered=0.4,
+                                aspect_ratio_range=(0.5, 2),
                                 area_range=(0.1, 1.0),
-                                max_attempts=200,
+                                max_attempts=2,
                                 scope=None):
     """Generates cropped_image using a one of the bboxes randomly distorted.
 
@@ -266,13 +266,12 @@ def preprocess_for_train(image, labels, bboxes,
         # Distort image and bounding boxes.
         dst_image = image
         dst_image, labels, bboxes, distort_bbox = \
-            distorted_bounding_box_crop(dst_image, labels, bboxes,
-                                        aspect_ratio_range=CROP_RATIO_RANGE)
+            distorted_bounding_box_crop(dst_image, labels, bboxes)
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,
                                           align_corners=False)
-#         tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
+        tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
 
         # Randomly flip the image horizontally.
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)

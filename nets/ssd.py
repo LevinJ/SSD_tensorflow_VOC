@@ -856,7 +856,7 @@ class SSDModel():
     def get_losses(self, logits, localisations,
                gclasses, glocalisations, gscores,
                match_threshold=0.5,
-               negative_ratio=3.,
+               negative_ratio=2.5,
                alpha=1.,
                label_smoothing=0.,
                scope=None):
