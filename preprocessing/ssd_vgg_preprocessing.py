@@ -179,6 +179,7 @@ def distorted_bounding_box_crop(image,
                                 aspect_ratio_range=(0.5, 2),
                                 area_range=(0.1, 1.0),
                                 max_attempts=2,
+                                bbox_crop_overlap = 0.4,
                                 scope=None):
     """Generates cropped_image using a one of the bboxes randomly distorted.
 
@@ -225,7 +226,18 @@ def distorted_bounding_box_crop(image,
         # Update bounding boxes: resize and filter out.
         bboxes = tfe.bboxes_resize(distort_bbox, bboxes)
         labels, bboxes = tfe.bboxes_filter_overlap(labels, bboxes,
-                                                   BBOX_CROP_OVERLAP)
+                                                   bbox_crop_overlap)
+        
+        #adjust bbbox coordinates so that they go back to [0,1]
+        #this is essentially keeping only the overlapped of the bbox
+        
+        ymin = tf.maximum(bboxes[:,0], 0.0)
+        
+        xmin = tf.maximum(bboxes[:,1], 0.0)
+        ymax = tf.minimum(bboxes[:,2], 1.0)
+        xmax = tf.minimum(bboxes[:,3], 1.0)
+        bboxes = tf.stack([ymin,xmin,ymax,xmax], axis = -1)
+
         return cropped_image, labels, bboxes, distort_bbox
 
 
@@ -256,7 +268,7 @@ def preprocess_for_train(image, labels, bboxes,
         # Convert to float scaled [0, 1].
         if image.dtype != tf.float32:
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-        tf_summary_image(image, bboxes, 'image_with_bboxes')
+        tf_summary_image(image, bboxes, 'original_image')
 
         # # Remove DontCare labels.
         # labels, bboxes = ssd_common.tf_bboxes_filter_labels(out_label,
@@ -267,11 +279,15 @@ def preprocess_for_train(image, labels, bboxes,
         dst_image = image
         dst_image, labels, bboxes, distort_bbox = \
             distorted_bounding_box_crop(dst_image, labels, bboxes)
+        
+        temp_bboxes = tf.concat([tf.reshape(distort_bbox, (1,-1)), bboxes], axis = 0)    
+        tf_summary_image(image, temp_bboxes, 'cropped_position')
+        
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,
                                           align_corners=False)
-        tf_summary_image(dst_image, bboxes, 'image_shape_distorted')
+        tf_summary_image(dst_image, bboxes, 'cropped_image')
 
         # Randomly flip the image horizontally.
         dst_image, bboxes = tf_image.random_flip_left_right(dst_image, bboxes)
@@ -281,7 +297,7 @@ def preprocess_for_train(image, labels, bboxes,
                 dst_image,
                 lambda x, ordering: distort_color(x, ordering, fast_mode),
                 num_cases=4)
-        tf_summary_image(dst_image, bboxes, 'image_color_distorted')
+        tf_summary_image(dst_image, bboxes, 'color_distorted_image')
 
         # Rescale to VGG input scale.
         image = dst_image * 255.

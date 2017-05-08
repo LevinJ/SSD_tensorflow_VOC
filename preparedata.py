@@ -230,6 +230,9 @@ class PrepareData():
                         
                         self.check_match_statistics(filename, gclasses, gscores)
                         
+#                         print("min: {}, max: {}".format(gbboxes.min(), gbboxes.max()))
+#                         return
+                        
 #                         print(glabels)
 #                         print("number of zero label patch {}".format((glabels.sum(axis=1)  == 0).sum()))
 #                         return
