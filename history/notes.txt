@@ -1,0 +1,13 @@
+2017-05-09:
+
+1. testing mAP 0.45, training mAP 0.63
+2. fine tuning from 90k to 12k, testig maP 0.49 , trainin mAP 0.67
+3. small objects like bottle(5), chair(9) has low mAP (0.1), probably because our data augmentation has been doing zoom in, and yet these objects are small in the image. data augmentation does not reflect both testing and training dataset.
+
+2017-05-10:
+
+1. Remvoe random crop, random color, retain left/right clip only, train 40k. 
+testing mAP 0.27, training mAP 0.83, loss, 3.4, positive number 550, cross entroy_neg = 238, cross_entropy_pos=633,localization 346.
+2. fine tune vgg16 weights, 20k
+
+
