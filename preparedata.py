@@ -85,10 +85,10 @@ class PrepareData():
         tensors = [image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores]
         #Batch the samples
         if self.is_training_data:
-            self.num_preprocessing_threads = 1
+            self.num_preprocessing_threads = 2
         else:
             # to make sure data is fectched in sequence during evaluation
-            self.num_preprocessing_threads = 2
+            self.num_preprocessing_threads = 1
             
         #tf.train.batch accepts only list of tensors, this batch shape can used to
         #flatten the list in list, and later on convet it back to list in list.

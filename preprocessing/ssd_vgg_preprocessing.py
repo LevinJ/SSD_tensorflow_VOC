@@ -280,8 +280,8 @@ def preprocess_for_train(image, labels, bboxes,
         dst_image, labels, bboxes, distort_bbox = \
             distorted_bounding_box_crop(dst_image, labels, bboxes)
         
-        temp_bboxes = tf.concat([tf.reshape(distort_bbox, (1,-1)), bboxes], axis = 0)    
-        tf_summary_image(image, temp_bboxes, 'cropped_position')
+#         temp_bboxes = tf.concat([tf.reshape(distort_bbox, (1,-1)), bboxes], axis = 0)    
+        tf_summary_image(image, tf.reshape(distort_bbox, (1,-1)), 'cropped_position')
         
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,

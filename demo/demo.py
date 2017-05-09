@@ -79,6 +79,7 @@ image_name = 'dog.jpg'
 image_name = 'person.jpg'
 image_name = '004487.jpg'
 image_name = '000009.jpg'
+image_name = '008134.jpg'
 
 img = mpimg.imread(path + image_name)
 rclasses, rscores, rbboxes =  process_image(img)
