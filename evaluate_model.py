@@ -96,7 +96,7 @@ class EvaluateModel(PrepareData):
                 num_evals=num_batches,
                 eval_op=list(names_to_updates.values()),
                 variables_to_restore=variables_to_restore,
-                eval_interval_secs=5,
+                eval_interval_secs=60*65,
                 session_config=config,
                 timeout=None)
         

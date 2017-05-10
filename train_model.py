@@ -7,17 +7,14 @@ import sys
 import time
 
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import tensorflow.contrib.slim as slim
 
-import numpy as np
 from preparedata import PrepareData
 from nets.ssd import g_ssd_model
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.python.client import timeline
 from tensorflow.python.lib.io import file_io
 from tensorflow.python.platform import tf_logging as logging
-from  postprocessing.eval_voc import g_eval_voc
 from postprocessingdata import g_post_processing_data
 from tensorflow.python.training import saver as tf_saver
 
@@ -344,7 +341,7 @@ class TrainModel(PrepareData):
     
         Returns:
             An init function run by the supervisor.
-        """
+        """  
         
         if self.checkpoint_path is None:
             return None
@@ -352,12 +349,12 @@ class TrainModel(PrepareData):
         # Warn the user if a checkpoint exists in the train_dir. Then we'll be
         # ignoring the checkpoint anyway.
         
-        if not self.train_dir == self.checkpoint_path:
-            if tf.train.latest_checkpoint(self.train_dir):
-                tf.logging.info(
-                        'Ignoring --checkpoint_path because a checkpoint already exists in %s'
-                        % self.train_dir)
-                return None
+        
+        if tf.train.latest_checkpoint(self.train_dir):
+            tf.logging.info(
+                    'Ignoring --checkpoint_path because a checkpoint already exists in %s'
+                    % self.train_dir)
+            return None
     
         exclusions = []
         if self.checkpoint_exclude_scopes:
@@ -366,10 +363,13 @@ class TrainModel(PrepareData):
     
         # TODO(sguada) variables.filter_variables()
         variables_to_restore = []
-        for var in slim.get_variables_to_restore():
+        all_variables = slim.get_model_variables()
+        if self.fine_tune_vgg16:
+            global_step = slim.get_or_create_global_step()
+            all_variables.append(global_step)
+        for var in all_variables:
             excluded = False
-            if "Adam" in var.op.name:
-                excluded = True
+            
             for exclusion in exclusions:
                 if var.op.name.startswith(exclusion):
                     excluded = True
@@ -410,13 +410,16 @@ class TrainModel(PrepareData):
         self.optimizer = 'adam'
         self.weight_decay = 0.0005 # for model regularization
         
-        #fine tune all parameters
-        self.train_dir = './logs'
-        self.checkpoint_path =  './logs'
-        self.checkpoint_exclude_scopes = None
-        self.trainable_scopes = None
-        self.max_number_of_steps = 60000
-        self.learning_rate=0.0001
+        self.fine_tune_vgg16 = True
+        
+        if self.fine_tune_vgg16:  
+            #fine tune all parameters
+            self.train_dir = './logs/finetune'
+            self.checkpoint_path =  './logs'
+            self.checkpoint_exclude_scopes = None
+            self.trainable_scopes = None
+            self.max_number_of_steps = 60000
+            self.learning_rate=0.0001
 
        
         
