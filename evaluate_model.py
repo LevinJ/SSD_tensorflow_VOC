@@ -96,7 +96,7 @@ class EvaluateModel(PrepareData):
                 num_evals=num_batches,
                 eval_op=list(names_to_updates.values()),
                 variables_to_restore=variables_to_restore,
-                eval_interval_secs=60*65,
+                eval_interval_secs=60*60,
                 session_config=config,
                 timeout=None)
         
@@ -113,6 +113,10 @@ class EvaluateModel(PrepareData):
         
         
         self.checkpoint_path = './logs/'
+        self.fine_tune_vgg16 = True
+        
+        if self.fine_tune_vgg16: 
+            self.checkpoint_path = './logs/finetune'
         
         
         self.eval_dir = './logs/evals/'
