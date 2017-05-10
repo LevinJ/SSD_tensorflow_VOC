@@ -10,4 +10,7 @@
 testing mAP 0.27, training mAP 0.83, loss, 3.4, positive number 550, cross entroy_neg = 238, cross_entropy_pos=633,localization 346.
 2. fine tune vgg16 weights, 20k
 
+2017-05-11:
+1. 20k fine tuning last about 12 hours, testing mAP 0.25, training mAP 0.83.  loss 3.1, positive number 550,cross_entory_neg=132,cross_entropy_pos=406,localization=216. weight do not seem to change during this 20k fine tuning. training does not seem go well, maybe it has to do with learning rate, batch normalization might help. or there might be bugs in codes.
+
 

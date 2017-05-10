@@ -23,8 +23,8 @@ class EvaluateModel(PrepareData):
         
         self.num_preprocessing_threads = 4
         
-        self.checkpoint_path =  '/tmp/tfmodel/'
-        self.eval_dir = '/tmp/tfmodel/'
+        self.checkpoint_path =  None
+        self.eval_dir = None
         
         
         return
@@ -98,6 +98,7 @@ class EvaluateModel(PrepareData):
                 variables_to_restore=variables_to_restore,
                 eval_interval_secs=60*60,
                 session_config=config,
+                max_number_of_evaluations=np.inf,
                 timeout=None)
         
         
@@ -113,13 +114,13 @@ class EvaluateModel(PrepareData):
         
         
         self.checkpoint_path = './logs/'
-        self.fine_tune_vgg16 = True
         
+        self.fine_tune_vgg16 = True
         if self.fine_tune_vgg16: 
             self.checkpoint_path = './logs/finetune'
         
         
-        self.eval_dir = './logs/evals/'
+        
         self.eval_during_training = True;
         
         if self.eval_during_training:
