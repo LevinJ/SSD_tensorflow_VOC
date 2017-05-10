@@ -204,6 +204,10 @@ class TrainModel(PrepareData):
         
         self.setup_debugging(predictions, localizations, glabels, gbboxes, gdifficults)
         
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
+        config = tf.ConfigProto(log_device_placement=False,
+                                gpu_options=gpu_options)
+        
         ###########################
         # Kicks off the training. #
         ###########################
@@ -217,6 +221,7 @@ class TrainModel(PrepareData):
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
                 save_summaries_secs=self.save_summaries_secs,
+                session_config=config,
                 save_interval_secs=self.save_interval_secs)
         
         
@@ -346,11 +351,13 @@ class TrainModel(PrepareData):
     
         # Warn the user if a checkpoint exists in the train_dir. Then we'll be
         # ignoring the checkpoint anyway.
-        if tf.train.latest_checkpoint(self.train_dir):
-            tf.logging.info(
-                    'Ignoring --checkpoint_path because a checkpoint already exists in %s'
-                    % self.train_dir)
-            return None
+        
+        if not self.train_dir == self.checkpoint_path:
+            if tf.train.latest_checkpoint(self.train_dir):
+                tf.logging.info(
+                        'Ignoring --checkpoint_path because a checkpoint already exists in %s'
+                        % self.train_dir)
+                return None
     
         exclusions = []
         if self.checkpoint_exclude_scopes:
@@ -359,8 +366,10 @@ class TrainModel(PrepareData):
     
         # TODO(sguada) variables.filter_variables()
         variables_to_restore = []
-        for var in slim.get_model_variables():
+        for var in slim.get_variables_to_restore():
             excluded = False
+            if "Adam" in var.op.name:
+                excluded = True
             for exclusion in exclusions:
                 if var.op.name.startswith(exclusion):
                     excluded = True
@@ -402,12 +411,12 @@ class TrainModel(PrepareData):
         self.weight_decay = 0.0005 # for model regularization
         
         #fine tune all parameters
-#         self.train_dir = './logs'
-#         self.checkpoint_path =  './logs'
-#         self.checkpoint_exclude_scopes = None
-#         self.trainable_scopes = None
-#         self.max_number_of_steps = 30000
-#         self.learning_rate=0.0001
+        self.train_dir = './logs'
+        self.checkpoint_path =  './logs'
+        self.checkpoint_exclude_scopes = None
+        self.trainable_scopes = None
+        self.max_number_of_steps = 60000
+        self.learning_rate=0.0001
 
        
         
