@@ -175,11 +175,11 @@ def distort_color(image, color_ordering=0, fast_mode=True, scope=None):
 def distorted_bounding_box_crop(image,
                                 labels,
                                 bboxes,
-                                min_object_covered=0.4,
+                                min_object_covered=0.05,
                                 aspect_ratio_range=(0.5, 2),
-                                area_range=(0.1, 1.0),
+                                area_range=(0.8, 1.0),
                                 max_attempts=2,
-                                bbox_crop_overlap = 0.4,
+                                bbox_crop_overlap = 0.8,
                                 scope=None):
     """Generates cropped_image using a one of the bboxes randomly distorted.
 
@@ -277,10 +277,10 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Distort image and bounding boxes.
         dst_image = image
-#         dst_image, labels, bboxes, distort_bbox = \
-#             distorted_bounding_box_crop(dst_image, labels, bboxes)
-#            
-#         tf_summary_image(image, tf.reshape(distort_bbox, (1,-1)), 'cropped_position')
+        dst_image, labels, bboxes, distort_bbox = \
+            distorted_bounding_box_crop(dst_image, labels, bboxes)
+            
+        tf_summary_image(image, tf.reshape(distort_bbox, (1,-1)), 'cropped_position')
         
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,

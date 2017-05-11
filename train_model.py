@@ -201,7 +201,7 @@ class TrainModel(PrepareData):
         
         self.setup_debugging(predictions, localizations, glabels, gbboxes, gdifficults)
         
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
         config = tf.ConfigProto(log_device_placement=False,
                                 gpu_options=gpu_options)
         
@@ -275,7 +275,7 @@ class TrainModel(PrepareData):
                                                                                     run_metadata=run_metadata)
         time_elapsed = time.time() - start_time
         
-        self.debug_training(sess,global_step)
+#         self.debug_training(sess,global_step)
         
     
         if run_metadata is not None:
@@ -410,7 +410,7 @@ class TrainModel(PrepareData):
         self.optimizer = 'adam'
         self.weight_decay = 0.0005 # for model regularization
         
-        self.fine_tune_vgg16 = True
+        self.fine_tune_vgg16 = False
         
         if self.fine_tune_vgg16:  
             #fine tune all parameters

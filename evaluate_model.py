@@ -32,16 +32,21 @@ class EvaluateModel(PrepareData):
     
     def __setup_eval(self):
         tf.logging.set_verbosity(tf.logging.INFO)
-        tf_global_step = slim.get_or_create_global_step()
+        _ = slim.get_or_create_global_step()
         
-        if not self.eval_during_training:
-            image, filename, glabels,gbboxes,gdifficults, gclasses, glocalisations, gscores = self.get_voc_2007_train_data(is_training_data=False)
-            self.eval_dir = './logs/evals/train_data'
-            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
-        else:
+        if self.eval_during_training:
             gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.01)
-            image, filename, glabels,gbboxes,gdifficults, gclasses, glocalisations, gscores = self.get_voc_2007_test_data()
+            
+        else:
+            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
+        
+        if self.eval_train:
+            image, _, glabels,gbboxes,gdifficults, _, _, _ = self.get_voc_2007_train_data(is_training_data=False)
+            self.eval_dir = './logs/evals/train_data'
+        else:
+            image, _, glabels,gbboxes,gdifficults, _, _, _ = self.get_voc_2007_test_data()
             self.eval_dir = './logs/evals/test_data'
+            
         
        
         
@@ -64,7 +69,7 @@ class EvaluateModel(PrepareData):
                                 gpu_options=gpu_options)
         
         
-        if not self.eval_during_training:
+        if self.eval_one_time:
             # Standard evaluation loop.
             print("one time evaluate...")
             if tf.gfile.IsDirectory(self.checkpoint_path):
@@ -115,16 +120,18 @@ class EvaluateModel(PrepareData):
         
         self.checkpoint_path = './logs/'
         
-        self.fine_tune_vgg16 = True
+        self.fine_tune_vgg16 = False
         if self.fine_tune_vgg16: 
             self.checkpoint_path = './logs/finetune'
         
         
         
         self.eval_during_training = True;
+        self.eval_train = True
+        self.eval_one_time = True
         
         if self.eval_during_training:
-            self.batch_size = 1
+            self.batch_size = 16
             #To evaluate while trainin going on
             with tf.device('/device:CPU:0'):      
                 self.__setup_eval()
