@@ -8,7 +8,7 @@ from nets.ssd import g_ssd_model
 import tf_extended as tfe
 import time
 from postprocessingdata import g_post_processing_data
-
+import argparse
 
 class EvaluateModel(PrepareData):
     def __init__(self):
@@ -69,7 +69,7 @@ class EvaluateModel(PrepareData):
                                 gpu_options=gpu_options)
         
         
-        if self.eval_one_time:
+        if not self.eval_loop:
             # Standard evaluation loop.
             print("one time evaluate...")
             if tf.gfile.IsDirectory(self.checkpoint_path):
@@ -101,7 +101,7 @@ class EvaluateModel(PrepareData):
                 num_evals=num_batches,
                 eval_op=list(names_to_updates.values()),
                 variables_to_restore=variables_to_restore,
-                eval_interval_secs=60*60,
+                eval_interval_secs=60*60*2,
                 session_config=config,
                 max_number_of_evaluations=np.inf,
                 timeout=None)
@@ -113,22 +113,30 @@ class EvaluateModel(PrepareData):
         
         
         return
+    def parse_param(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-f', '--finetune',  help='whether use checkpoints under finetune folder',  action='store_true')
+        parser.add_argument('-s', '--simul',  help='evaluate when training is onging',  action='store_true')
+        parser.add_argument('-t', '--train',  help='evaluate aginst train dataset',  action='store_true')
+        parser.add_argument('-l', '--loop',  help='evaluate checkpoints by loops',  action='store_true')
+        parser.add_argument('-c', '--checkpoint',  help='evaluate a specific checkpoint',  default="")
+        args = parser.parse_args()
+        
+        self.checkpoint_path = './logs/'
+        if args.finetune:
+            self.checkpoint_path = './logs/finetune'
+        if args.checkpoint != "":
+            self.checkpoint_path = args.checkpoint
+            
+        self.eval_during_training = args.simul
+        self.eval_train = args.train
+        self.eval_loop = args.loop
+            
+        return
     
     
     def run(self):
-        
-        
-        self.checkpoint_path = './logs/'
-        
-        self.fine_tune_vgg16 = False
-        if self.fine_tune_vgg16: 
-            self.checkpoint_path = './logs/finetune'
-        
-        
-        
-        self.eval_during_training = True;
-        self.eval_train = True
-        self.eval_one_time = True
+        self.parse_param()
         
         if self.eval_during_training:
             self.batch_size = 16

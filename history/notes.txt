@@ -13,6 +13,11 @@ testing mAP 0.27, training mAP 0.83, loss, 3.4, positive number 550, cross entro
 2017-05-11:
 1. 20k fine tuning last about 12 hours, testing mAP 0.25, training mAP 0.83.  loss 3.1, positive number 550,cross_entory_neg=132,cross_entropy_pos=406,localization=216. weight do not seem to change during this 20k fine tuning. training does not seem go well, maybe it has to do with learning rate, batch normalization might help. or there might be bugs in codes.
 2. add romdom crop, area [0.8,1], max_attempts=2,bbox_crop_overlap = 0.8, 40k steps
-training time 12hours, tratesting mAP 0.37, training mAP 0.78, loss 4.6, postive number= 500, cross_entropy_neg=499,  cross_entropy_pos=972,localization=720.
+training time 12hours, testing mAP 0.37, training mAP 0.78, loss 4.6, postive number= 500, cross_entropy_neg=499,  cross_entropy_pos=972,localization=720.
+
+2017-05-12:
+1. add batch normalization layers into ssd network
+testing mAP 0.39, training mAP 0.75, pos_num=500,loss=4.9, neg=359, pos=930,loc=642. in all, we see slight improvement after adding batch normalization.
+
 
 

@@ -81,52 +81,63 @@ class SSDModel():
     def __additional_ssd_block(self, end_points, net):
         # Additional SSD blocks.
         # Block 6: let's dilate the hell out of it!
-        with tf.variable_scope("additional_blocks"):
-            net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
-            end_points['block6'] = net
-            # Block 7: 1x1 conv. Because the fuck.
-            net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
-            end_points['block7'] = net 
-            
-            # Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts)
-            end_point = 'block8'
-            with tf.variable_scope(end_point):
-                net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
-                net = custom_layers.pad2d(net, pad=(1, 1))#may remvoe this layer later on
-                net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
-            end_points[end_point] = net
-            end_point = 'block9'
-            with tf.variable_scope(end_point):
-                net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-                net = custom_layers.pad2d(net, pad=(1, 1))
-                net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
-            end_points[end_point] = net
-            end_point = 'block10'
-            with tf.variable_scope(end_point):
-                net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-                net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
-            end_points[end_point] = net
-            end_point = 'block11'
-            with tf.variable_scope(end_point):
-                net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-                net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
-            end_points[end_point] = net
-            # Prediction and localisations layers.
-            predictions = []
-            logits = []
-            localisations = []
-            for i, layer in enumerate(self.feat_layers):
-                with tf.variable_scope(layer + '_box'):
-                    p, l = self.ssd_multibox_layer(end_points[layer],
-                                              self.num_classes,
-                                              self.anchor_sizes[i],
-                                              self.anchor_ratios[i],
-                                              self.normalizations[i])
-                predictions.append(slim.softmax(p))
-                logits.append(p)
-                localisations.append(l)
-    
+        net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
+        net = slim.batch_norm(net)
+        end_points['block6'] = net
+        # Block 7: 1x1 conv. Because the fuck.
+        net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
+        net = slim.batch_norm(net)
+        end_points['block7'] = net
+
+        # Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
+        end_point = 'block8'
+        with tf.variable_scope(end_point):
+            net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
+            net = slim.batch_norm(net)
+            net = custom_layers.pad2d(net, pad=(1, 1))
+            net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
+            net = slim.batch_norm(net)
+        end_points[end_point] = net
+        end_point = 'block9'
+        with tf.variable_scope(end_point):
+            net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+            net = slim.batch_norm(net)
+            net = custom_layers.pad2d(net, pad=(1, 1))
+            net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
+            net = slim.batch_norm(net)
+        end_points[end_point] = net
+        end_point = 'block10'
+        with tf.variable_scope(end_point):
+            net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+            net = slim.batch_norm(net)
+            net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+            net = slim.batch_norm(net)
+        end_points[end_point] = net
+        end_point = 'block11'
+        with tf.variable_scope(end_point):
+            net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
+            net = slim.batch_norm(net)
+            net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
+            net = slim.batch_norm(net)
+        end_points[end_point] = net
+
+        # Prediction and localisations layers.
+        predictions = []
+        logits = []
+        localisations = []
+        for i, layer in enumerate(self.feat_layers):
+            with tf.variable_scope(layer + '_box'):
+                p, l = self.ssd_multibox_layer(end_points[layer],
+                                          self.num_classes,
+                                          self.anchor_sizes[i],
+                                          self.anchor_ratios[i],
+                                          self.normalizations[i])
+            predictions.append(slim.softmax(p))
+            logits.append(p)
+            localisations.append(l)
+
         return predictions, localisations, logits, end_points
+    
     def __arg_scope(self, weight_decay=0.0005, data_format='NHWC'):
         """Defines the VGG arg scope.
     
@@ -151,7 +162,7 @@ class SSDModel():
                     return sc
 
     
-    def get_model(self,inputs, weight_decay=0.0005):
+    def get_model(self,inputs, weight_decay=0.0005,is_training=False):
         # End_points collect relevant activations for external use.
         arg_scope = self.__arg_scope(weight_decay=weight_decay)
         with slim.arg_scope(arg_scope):
@@ -182,54 +193,13 @@ class SSDModel():
         
             # Additional SSD blocks.
             # Block 6
-            
-            with tf.variable_scope(self.model_name):
-                net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
-                end_points['block6'] = net
-                # Block 7: 1x1 conv. Because the fuck.
-                net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
-                end_points['block7'] = net
-        
-                # Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
-                end_point = 'block8'
-                with tf.variable_scope(end_point):
-                    net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
-                    net = custom_layers.pad2d(net, pad=(1, 1))
-                    net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
-                end_points[end_point] = net
-                end_point = 'block9'
-                with tf.variable_scope(end_point):
-                    net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-                    net = custom_layers.pad2d(net, pad=(1, 1))
-                    net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
-                end_points[end_point] = net
-                end_point = 'block10'
-                with tf.variable_scope(end_point):
-                    net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-                    net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
-                end_points[end_point] = net
-                end_point = 'block11'
-                with tf.variable_scope(end_point):
-                    net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
-                    net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
-                end_points[end_point] = net
-        
-                # Prediction and localisations layers.
-                predictions = []
-                logits = []
-                localisations = []
-                for i, layer in enumerate(self.feat_layers):
-                    with tf.variable_scope(layer + '_box'):
-                        p, l = self.ssd_multibox_layer(end_points[layer],
-                                                  self.num_classes,
-                                                  self.anchor_sizes[i],
-                                                  self.anchor_ratios[i],
-                                                  self.normalizations[i])
-                    predictions.append(slim.softmax(p))
-                    logits.append(p)
-                    localisations.append(l)
-        
-                return predictions, localisations, logits, end_points
+            with slim.arg_scope([slim.conv2d],
+                            activation_fn=None):
+                with slim.arg_scope([slim.batch_norm],
+                            activation_fn=tf.nn.relu, is_training=is_training,updates_collections=None):
+                    with tf.variable_scope(self.model_name):
+                        return self.__additional_ssd_block(end_points, net)
+                        
     
     def ssd_multibox_layer(self, inputs,
                        num_classes,

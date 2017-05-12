@@ -179,7 +179,7 @@ class TrainModel(PrepareData):
         image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_train_data()
         
         #get model outputs
-        predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay)
+        predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay, is_training=True)
         
         #get model training losss
         total_loss = g_ssd_model.get_losses(logits, localisations, gclasses, localizations, gscores)
