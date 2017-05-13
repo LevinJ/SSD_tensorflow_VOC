@@ -18,6 +18,12 @@ training time 12hours, testing mAP 0.37, training mAP 0.78, loss 4.6, postive nu
 2017-05-12:
 1. add batch normalization layers into ssd network
 testing mAP 0.39, training mAP 0.75, pos_num=500,loss=4.9, neg=359, pos=930,loc=642. in all, we see slight improvement after adding batch normalization.
+2.tried fine tuning vgg weights from 1k, found that v66g weights don't change at all
+first it's because learning rate being too small (0.0001), causeing both ssd and vgg16 weights do not change. after increasing learning rate to 0.001, ssd weights start, but vgg16 still don't change, this is probably becasue the netwrok being too deep (23 layers in all). considering vgg16 weights is already trained on similar dataset (imagenet), there is not much need to update vgg16 weigths
+3. increase learning rate from 0.001 to 0.01, ssd weights update only
+training time, 9 hours, testing mAP 0.44 (category 5 and categoy 16 has particularly low score, 0.1), training mAP 0.86. loss=2.9, neg=270, pos=470,loc=329. 
+
+
 
 
 

@@ -403,7 +403,7 @@ class TrainModel(PrepareData):
         self.max_number_of_steps = 40000
         self.log_every_n_steps = 100
         
-        self.learning_rate = 0.001
+        self.learning_rate = 0.01
         self.learning_rate_decay_type = 'fixed'
         
         
@@ -419,7 +419,7 @@ class TrainModel(PrepareData):
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = None
             self.max_number_of_steps = 60000
-            self.learning_rate=0.0001
+            self.learning_rate=0.001
 
        
         
