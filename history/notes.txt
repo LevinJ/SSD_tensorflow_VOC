@@ -23,7 +23,8 @@ first it's because learning rate being too small (0.0001), causeing both ssd and
 3. increase learning rate from 0.001 to 0.01, ssd weights update only
 training time, 9 hours, testing mAP 0.44 (category 5 and categoy 16 has particularly low score, 0.1), training mAP 0.86. loss=2.9, neg=270, pos=470,loc=329. 
 
-
+4. change romdom crop from area [0.8,1] to [0.6,1]
+testing mAP=0.47, training mAP=0.84, loss=3.8 
 
 
 
