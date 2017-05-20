@@ -21,7 +21,7 @@ class RunAllCheckpoints(object):
             if m:
                 num = m.group(1)
                 checkpoints.append(num)
-        min_step = 100
+        min_step = 80001
         step = 100
         last_step = min_step
         sel_checkpoints = []

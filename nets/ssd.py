@@ -78,15 +78,26 @@ class SSDModel():
         self.keep_top_k = 200
         
         return
+    def __dropout(self,net):
+        net_shape = net.get_shape().as_list() 
+        noise_shape = [net_shape[0],1,1,net_shape[-1]]
+        return slim.dropout(net, noise_shape=noise_shape)
     def __additional_ssd_block(self, end_points, net):
         # Additional SSD blocks.
         # Block 6: let's dilate the hell out of it!
+        
+        
+        
+        
+        
         net = slim.conv2d(net, 1024, [3, 3], rate=6, scope='conv6')
         net = slim.batch_norm(net)
+        net = self.__dropout(net)
         end_points['block6'] = net
         # Block 7: 1x1 conv. Because the fuck.
         net = slim.conv2d(net, 1024, [1, 1], scope='conv7')
         net = slim.batch_norm(net)
+        net = self.__dropout(net)
         end_points['block7'] = net
 
         # Block 8/9/10/11: 1x1 and 3x3 convolutions stride 2 (except lasts).
@@ -94,31 +105,39 @@ class SSDModel():
         with tf.variable_scope(end_point):
             net = slim.conv2d(net, 256, [1, 1], scope='conv1x1')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
             net = custom_layers.pad2d(net, pad=(1, 1))
             net = slim.conv2d(net, 512, [3, 3], stride=2, scope='conv3x3', padding='VALID')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
         end_points[end_point] = net
         end_point = 'block9'
         with tf.variable_scope(end_point):
             net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
             net = custom_layers.pad2d(net, pad=(1, 1))
             net = slim.conv2d(net, 256, [3, 3], stride=2, scope='conv3x3', padding='VALID')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
         end_points[end_point] = net
         end_point = 'block10'
         with tf.variable_scope(end_point):
             net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
             net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
         end_points[end_point] = net
         end_point = 'block11'
         with tf.variable_scope(end_point):
             net = slim.conv2d(net, 128, [1, 1], scope='conv1x1')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
             net = slim.conv2d(net, 256, [3, 3], scope='conv3x3', padding='VALID')
             net = slim.batch_norm(net)
+            net = self.__dropout(net)
         end_points[end_point] = net
 
         # Prediction and localisations layers.
@@ -192,13 +211,15 @@ class SSDModel():
                 
         
             # Additional SSD blocks.
-            # Block 6
+            keep_prob=0.5
             with slim.arg_scope([slim.conv2d],
                             activation_fn=None):
                 with slim.arg_scope([slim.batch_norm],
                             activation_fn=tf.nn.relu, is_training=is_training,updates_collections=None):
-                    with tf.variable_scope(self.model_name):
-                        return self.__additional_ssd_block(end_points, net)
+                    with slim.arg_scope([slim.dropout],
+                            is_training=is_training,keep_prob=keep_prob):
+                        with tf.variable_scope(self.model_name):
+                            return self.__additional_ssd_block(end_points, net)
                         
     
     def ssd_multibox_layer(self, inputs,
