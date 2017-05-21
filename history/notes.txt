@@ -35,5 +35,10 @@ testing mAP=0.45, training mAP=0.78, loss=4.3,neg=273,pos=665,loc=412
 1. add 0.5 dropout, 140k,
 testing mAP=0.47, training mAP = 0.80.
 
+2017-05-22:
+1. no random crop, color distortion. learning rate 0.1, 40k training step.
+
+testing mAP 0.45, trainin mAP 0.87. reached 0.85 with only 5k trainin step. category 5,9,16 has only 0.1 testing mAP, while category 8 has the highest 0.7.  training loss 2.8 (5k), 1.6 (40k)
+
 
 
