@@ -80,8 +80,14 @@ image_name = 'person.jpg'
 image_name = '004487.jpg'
 image_name = '000009.jpg'
 image_name = '008134.jpg'
+image_name = '006760.jpg' #category 8
+image_name = '006409.jpg' #category 5
 
-img = mpimg.imread(path + image_name)
+image_name = path + image_name
+
+image_name = '../../data/voc/2007_train/VOCdevkit/VOC2007/JPEGImages/000050.jpg'
+
+img = mpimg.imread(image_name)
 rclasses, rscores, rbboxes =  process_image(img)
 
 # visualization.bboxes_draw_on_img(img, rclasses, rscores, rbboxes, visualization.colors_plasma)

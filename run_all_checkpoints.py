@@ -47,7 +47,7 @@ class RunAllCheckpoints(object):
         args = parser.parse_args()
         self.checkpoint_path = './logs/'
         if args.finetune:
-            self.checkpoint_path = './logs/finetune'
+            self.checkpoint_path = './logs/finetune/'
         self.check_only_latest = args.latest
             
         return

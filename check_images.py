@@ -22,38 +22,44 @@ class CheckImages(PrepareData):
         PrepareData.__init__(self)
         return
     
+    def list_images(self,sess, batch_data,target_object=1):
+        i = 0
+        num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
+        target_filenames = []
+        num_bboxes = 0
+        while i < num_batches:  
+             
+            image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
+            pos_sample_inds = (glabels == target_object).nonzero()
+            num_bboxes += len(pos_sample_inds[0])
+            target_filenames.extend(list(filename[np.unique(pos_sample_inds[0])]))
+           
+            i += 1
+#         print("number of matched image {} matched bboxes {} for {}, \n{}".format(len(target_filenames), num_bboxes, target_object, np.array(target_filenames)))
+        print("{}, number of matched image {} matched bboxes {}, ratio {}".format(target_object, len(target_filenames), num_bboxes, float(num_bboxes)/len(target_filenames)))
+        return
+    
+    
     def run(self):
         
         
         with tf.Graph().as_default():
-#             batch_data= self.get_voc_2007_train_data(is_training_data=False)
-            batch_data = self.get_voc_2007_test_data()
+            batch_data= self.get_voc_2007_train_data(is_training_data=False)
+#             batch_data = self.get_voc_2007_test_data()
 #             batch_data = self.get_voc_2012_train_data()
 #             batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
 
 
 #             return self.iterate_file_name(batch_data)
            
-            num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
-            target_filenames = []
-            target_object = 9
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):  
-                    i = 0
-                    while i < num_batches:  
-                         
-                        image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
-                        pos_sample_inds = (glabels == target_object).nonzero()
-                        target_filenames.extend(list(filename[np.unique(pos_sample_inds[0])]))
-#                         print(filename)
-#                         print(glabels)
-                        
-                         
-                       
-                        i += 1
-                    print(target_filenames)
+#                     target_object = 9
+                    for target_object in np.arange(1,21):
+                        self.list_images(sess, batch_data,target_object)
+                    
                             
                         
         

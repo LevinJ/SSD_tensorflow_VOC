@@ -123,8 +123,9 @@ class EvaluateModel(PrepareData):
         args = parser.parse_args()
         
         self.checkpoint_path = './logs/'
+        self.finetune = args.finetune
         if args.finetune:
-            self.checkpoint_path = './logs/finetune'
+            self.checkpoint_path = './logs/finetune/'
         if args.checkpoint != "":
             self.checkpoint_path = args.checkpoint
             

@@ -56,7 +56,7 @@ class PrepareData():
                     self.dataset,
                     shuffle=shuffle,
                     num_readers=self.num_readers,
-                    common_queue_capacity=30 * self.batch_size,
+                    common_queue_capacity=20 * self.batch_size,
                     common_queue_min=10 * self.batch_size)
         
         # Get for SSD network: image, labels, bboxes.
@@ -179,7 +179,8 @@ class PrepareData():
         
     def iterate_file_name(self, batch_data):
         
-        num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
+        num_batches = 1*math.ceil(self.dataset.num_samples / float(self.batch_size))
+        all_files = []
         with tf.Session('') as sess:
             init = tf.global_variables_initializer()
             sess.run(init)
@@ -188,6 +189,13 @@ class PrepareData():
                     
                     image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
                     print(filename)
+                    all_files.append(filename)
+                all_files = np.concatenate(all_files)
+                
+                
+                all_files_unique = np.unique(all_files)
+                print(len(all_files_unique))
+            
         return
     def check_match_statistics(self,filename,gclasses, gscores):
         #flatten the array into Batch_num x bbox_num
@@ -212,13 +220,13 @@ class PrepareData():
         
         
         with tf.Graph().as_default():
-            batch_data= self.get_voc_2007_train_data()
+            batch_data= self.get_voc_2007_train_data(is_training_data=True)
 #             batch_data = self.get_voc_2007_test_data()
 #             batch_data = self.get_voc_2012_train_data()
 #             batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
 
 
-#             return self.iterate_file_name(batch_data)
+            return self.iterate_file_name(batch_data)
            
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
@@ -228,7 +236,7 @@ class PrepareData():
                          
                         image, filename,glabels,gbboxes,gdifficults,gclasses, glocalisations, gscores = sess.run(list(batch_data))
                         
-                        self.check_match_statistics(filename, gclasses, gscores)
+                        
                         
 #                         print("min: {}, max: {}".format(gbboxes.min(), gbboxes.max()))
 #                         return
@@ -237,12 +245,26 @@ class PrepareData():
 #                         print("number of zero label patch {}".format((glabels.sum(axis=1)  == 0).sum()))
 #                         return
                        
-                        print(filename)
+#                         
                         
                          
-                         
+                        print(filename)
+                        selected_file =  b'000050'
+                        picked_inds = None
                         #selet the first image in the batch
-                        picked_inds = 0
+                        if selected_file is None:
+                            picked_inds = 0
+                        else:
+                            picked_inds = (selected_file == filename).nonzero()
+                            if len(picked_inds[0]) == 0:
+                                picked_inds = None
+                            else:
+                                picked_inds = picked_inds[0][0]
+                        
+                        if picked_inds is None:
+                            continue
+                        
+                        self.check_match_statistics(filename, gclasses, gscores)
                         target_labels_data = [item[picked_inds] for item in gclasses]
                         target_localizations_data = [item[picked_inds] for item in glocalisations]
                         target_scores_data = [item[picked_inds] for item in gscores]
@@ -253,10 +275,11 @@ class PrepareData():
                         self.__disp_image(image_data, glabels[picked_inds], gbboxes[picked_inds])
                         found_matched = self.__disp_matched_anchors(image_data,target_labels_data, target_localizations_data, target_scores_data)
                         plt.show()
+                        break;
                         #exit the batch data testing right after a successful match have been found
 #                         if found_matched:
                         #this could be a potential issue to be solved since sometime not all grouth truth bboxes are encoded.
-                        break
+                        
                             
                         
         

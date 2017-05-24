@@ -56,7 +56,7 @@ class TrainModel(PrepareData):
         
         self.batch_size= 32
         
-        self.save_interval_secs = 60*60#one hour
+        self.save_interval_secs = 60*60*0.5#one hour
         self.save_summaries_secs= 60
 
         
@@ -400,7 +400,7 @@ class TrainModel(PrepareData):
         self.trainable_scopes = g_ssd_model.model_name
         
         
-        self.max_number_of_steps = 40000
+        self.max_number_of_steps = 10000
         self.log_every_n_steps = 100
         
         self.learning_rate = 0.1
@@ -410,16 +410,16 @@ class TrainModel(PrepareData):
         self.optimizer = 'adam'
         self.weight_decay = 0.0005 # for model regularization
         
-        self.fine_tune_vgg16 = False
+        self.fine_tune_vgg16 = True
         
         if self.fine_tune_vgg16:  
             #fine tune all parameters
             self.train_dir = './logs/finetune'
             self.checkpoint_path =  './logs'
             self.checkpoint_exclude_scopes = None
-            self.trainable_scopes = None
-            self.max_number_of_steps = 60000
-            self.learning_rate=0.001
+            self.trainable_scopes = "{},vgg_16".format(g_ssd_model.model_name)
+            self.max_number_of_steps = 45000
+            self.learning_rate=0.01
 
        
         

@@ -40,5 +40,54 @@ testing mAP=0.47, training mAP = 0.80.
 
 testing mAP 0.45, trainin mAP 0.87. reached 0.85 with only 5k trainin step. category 5,9,16 has only 0.1 testing mAP, while category 8 has the highest 0.7.  training loss 2.8 (5k), 1.6 (40k)
 
+2017-05-23:
+1. check training image fetch,
+
+for one epoch, 5011 training images, 4458 are fetched, the max is 2.
+for two epoch, 5011 training images, 5010 are fetched, the max is 3
+for four epoch, 5011 training images, 5011 are fetched, the min is 2, the max is 5
+for eight epoch, 5011 training images, 5011 are fetchd, the min is 6, the max is 9
+
+2. reduce common_queue_capacity from 30 to 20
+
+for one epoch, 5011 training image, 4505 are fetched, the max is 2.
+for eights epochs, 5011 trainig images, 50111 are fetched, the min is 7 , the max is 9 
+
+3. check boudning box 
+
+1, number of matched image 240 matched bboxes 331, ratio 1.3791666666666667
+2, number of matched image 255 matched bboxes 418, ratio 1.6392156862745098
+3, number of matched image 334 matched bboxes 600, ratio 1.7964071856287425
+4, number of matched image 188 matched bboxes 398, ratio 2.117021276595745
+5, number of matched image 262 matched bboxes 634, ratio 2.4198473282442747
+6, number of matched image 197 matched bboxes 272, ratio 1.380710659898477
+7, number of matched image 765 matched bboxes 1651, ratio 2.1581699346405228
+8, number of matched image 345 matched bboxes 390, ratio 1.1304347826086956
+9, number of matched image 575 matched bboxes 1436, ratio 2.497391304347826
+10, number of matched image 147 matched bboxes 357, ratio 2.4285714285714284
+11, number of matched image 263 matched bboxes 310, ratio 1.1787072243346008
+12, number of matched image 430 matched bboxes 538, ratio 1.2511627906976743
+13, number of matched image 296 matched bboxes 411, ratio 1.3885135135135136
+14, number of matched image 249 matched bboxes 390, ratio 1.5662650602409638
+15, number of matched image 2100 matched bboxes 5463, ratio 2.6014285714285714
+16, number of matched image 273 matched bboxes 625, ratio 2.2893772893772892
+17, number of matched image 97 matched bboxes 353, ratio 3.6391752577319587
+18, number of matched image 373 matched bboxes 426, ratio 1.1420911528150135
+19, number of matched image 264 matched bboxes 330, ratio 1.25
+20, number of matched image 279 matched bboxes 367, ratio 1.3154121863799284
+
+2012-05-24:
+1. learning rate 0.1 10k, then fine tune, learning rate 0.01, 45k.
+
+by 10k, loss 2.8, by 45k, loss 1.0
+by 10k, testing 0.44, training 0.86. by 45k, 0.97
+
+for category 5, testing remains about 0.1 since 1k, training rise from 0.60 to 0.93
+
+fine tune can greatly improve training mAP, training loss.
+
+
+
+
 
 
