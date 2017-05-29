@@ -220,10 +220,10 @@ class PrepareData():
         
         
         with tf.Graph().as_default():
-            batch_data= self.get_voc_2007_train_data(is_training_data=True)
+#             batch_data= self.get_voc_2007_train_data(is_training_data=True)
 #             batch_data = self.get_voc_2007_test_data()
 #             batch_data = self.get_voc_2012_train_data()
-#             batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
+            batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
 
 
             return self.iterate_file_name(batch_data)

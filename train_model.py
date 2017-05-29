@@ -56,7 +56,7 @@ class TrainModel(PrepareData):
         
         self.batch_size= 32
         
-        self.save_interval_secs = 60*60*0.5#one hour
+        self.save_interval_secs = 60*60#one hour
         self.save_summaries_secs= 60
 
         
@@ -176,7 +176,7 @@ class TrainModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         
         #get batched training training data 
-        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_train_data()
+        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_2012_train_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay, is_training=True)
@@ -218,7 +218,7 @@ class TrainModel(PrepareData):
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
                 save_summaries_secs=self.save_summaries_secs,
-                session_config=config,
+#                 session_config=config,
                 save_interval_secs=self.save_interval_secs)
         
         
@@ -400,7 +400,7 @@ class TrainModel(PrepareData):
         self.trainable_scopes = g_ssd_model.model_name
         
         
-        self.max_number_of_steps = 10000
+        self.max_number_of_steps = 30000
         self.log_every_n_steps = 100
         
         self.learning_rate = 0.1
@@ -418,7 +418,7 @@ class TrainModel(PrepareData):
             self.checkpoint_path =  './logs'
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = "{},vgg_16".format(g_ssd_model.model_name)
-            self.max_number_of_steps = 45000
+            self.max_number_of_steps = 90000
             self.learning_rate=0.01
 
        

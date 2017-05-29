@@ -86,6 +86,40 @@ for category 5, testing remains about 0.1 since 1k, training rise from 0.60 to 0
 
 fine tune can greatly improve training mAP, training loss.
 
+2017-05-26:
+1. add training dataset 12
+1)for one trainig epoch, 22136 training samples in all, 21200 are fetching , so fetching is ok.
+2) bounding boxes statistics,
+1, number of matched image 956 matched bboxes 1333, ratio 1.3943514644351465
+2, number of matched image 858 matched bboxes 1255, ratio 1.4627039627039626
+3, number of matched image 1144 matched bboxes 1870, ratio 1.6346153846153846
+4, number of matched image 737 matched bboxes 1457, ratio 1.976933514246947
+5, number of matched image 1074 matched bboxes 2195, ratio 2.043761638733706
+6, number of matched image 664 matched bboxes 957, ratio 1.4412650602409638
+7, number of matched image 2046 matched bboxes 4137, ratio 2.0219941348973607
+8, number of matched image 1473 matched bboxes 1667, ratio 1.131704005431093
+9, number of matched image 1940 matched bboxes 4492, ratio 2.3154639175257734
+10, number of matched image 486 matched bboxes 1127, ratio 2.3189300411522633
+11, number of matched image 954 matched bboxes 1110, ratio 1.1635220125786163
+12, number of matched image 1771 matched bboxes 2136, ratio 1.2060982495765105
+13, number of matched image 820 matched bboxes 1209, ratio 1.474390243902439
+14, number of matched image 824 matched bboxes 1191, ratio 1.4453883495145632
+15, number of matched image 11678 matched bboxes 22848, ratio 1.9564994005822915
+16, number of matched image 886 matched bboxes 1827, ratio 2.0620767494356658
+17, number of matched image 454 matched bboxes 1437, ratio 3.1651982378854626
+18, number of matched image 1114 matched bboxes 1266, ratio 1.1364452423698383
+19, number of matched image 852 matched bboxes 1032, ratio 1.2112676056338028
+20, number of matched image 925 matched bboxes 1261, ratio 1.3632432432432433
+
+2017-05-37:
+20k, training, 0.1 learning rate, loss 3.1, testing 
+80k, fine tuning, 0.05 training rate.loss 1.4, testing 0.57, training 0.97
+
+2017-05-29:
+30k, training, learning rate 0.1, testing 0.50, training  0.84
+ 
+90k, fine tuning, 0.01, testing 0.54, training 0.92. loss, 1.5
+
 
 
 
