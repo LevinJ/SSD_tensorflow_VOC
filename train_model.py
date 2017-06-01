@@ -418,7 +418,7 @@ class TrainModel(PrepareData):
             self.checkpoint_path =  './logs'
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = "{},vgg_16".format(g_ssd_model.model_name)
-            self.max_number_of_steps = 90000
+            self.max_number_of_steps = 110000
             self.learning_rate=0.01
 
        

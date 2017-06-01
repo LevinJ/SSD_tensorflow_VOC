@@ -120,6 +120,13 @@ fine tune can greatly improve training mAP, training loss.
  
 90k, fine tuning, 0.01, testing 0.54, training 0.92. loss, 1.5
 
+2017-06-02:
+
+added color distortion,
+
+30k, training, learning rate 0.1, testing 0.5, training 0.80,loss
+90k, fine tuning, learning 0.02,  testing 0.56, trainging 0.96  (highest 0.58, 0.93, 61k)
+
 
 
 
