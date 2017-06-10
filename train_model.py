@@ -213,7 +213,7 @@ class TrainModel(PrepareData):
                 train_op,
                 self.train_dir,
                 train_step_fn=self.train_step,
-                saver=tf_saver.Saver(max_to_keep=50),
+                saver=tf_saver.Saver(max_to_keep=500),
                 init_fn=self.__get_init_fn(),
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
@@ -418,8 +418,8 @@ class TrainModel(PrepareData):
             self.checkpoint_path =  './logs'
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = "{},vgg_16".format(g_ssd_model.model_name)
-            self.max_number_of_steps = 110000
-            self.learning_rate=0.01
+            self.max_number_of_steps = 140000
+            self.learning_rate=0.0001
 
        
         

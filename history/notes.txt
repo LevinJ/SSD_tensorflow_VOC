@@ -127,6 +127,23 @@ added color distortion,
 30k, training, learning rate 0.1, testing 0.5, training 0.80,loss
 90k, fine tuning, learning 0.02,  testing 0.56, trainging 0.96  (highest 0.58, 0.93, 61k)
 
+added strong patch sampling
+
+30k, training, learning rate 0.1, mAP 0.49, 0.55, loss, 4.6
+60k, fine tuning, learning rate 0.02, mAP 0.59, 0.68,loss,3.5
+90k, fine tuning, learning rate 0.01, mAP 0.63, 0.77,loss,3.1
+120, fine tuning, learning rate 0.001,mAP 0.65, 0.80,loss,2.6
+
+
+140, fine tuning, learning rate 0.01,mAP  0.62, 0.78, loss  2.8,  0.01 too big. result deteriorates. 
+
+130, fine tuning, learning rate 0.005,mAP  0.62,0.79, loss 2.7
+130, fine tuning, learning rate 0.001, maP, 0.65,0.81, loss 2.6  140, mAP 0.66,0.81, loss 2.6
+130, fine tuning, learning rate 0.0005 mAP,  0.66,0.81
+
+130, fine tuning, learning rate 0.0001 mAP,  0.66,0.81, 140, learning rate 0.0001, mAP 0.66, 0.81
+
+In summary, after 100k, not much improvement at all.
 
 
 
