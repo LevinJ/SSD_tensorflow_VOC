@@ -44,7 +44,7 @@ image_4d = tf.expand_dims(image_pre, 0)
 predictions, localisations, _, _ = g_ssd_model.get_model(image_4d)
 
 # Restore SSD model.
-ckpt_filename = tf.train.latest_checkpoint('../logs/')
+ckpt_filename = tf.train.latest_checkpoint('../logs/finetune/')
 
 isess.run(tf.global_variables_initializer())
 saver = tf.train.Saver()
@@ -76,16 +76,31 @@ def process_image(img, select_threshold=0.5, nms_threshold=.45, net_shape=(300, 
 # Test on some demo image and visualize output.
 path = './images/'
 image_name = 'dog.jpg'
-image_name = 'person.jpg'
-image_name = '004487.jpg'
-image_name = '000009.jpg'
-image_name = '008134.jpg'
-image_name = '006760.jpg' #category 8
-image_name = '006409.jpg' #category 5
+image_name = 'street.jpg'
+# image_name = 'horses.jpg'
+# image_name = 'eagle.jpg'
+# image_name = 'person.jpg'
+# image_name = '004487.jpg'
+# image_name = '000009.jpg'
+# image_name = '008134.jpg'
+# image_name = '006760.jpg' #category 8
+# image_name = '006409.jpg' #category 5
 
 image_name = path + image_name
 
-image_name = '../../data/voc/2007_train/VOCdevkit/VOC2007/JPEGImages/000050.jpg'
+
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/000593.jpg'
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001086.jpg'
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/009075.jpg'
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/009957.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/005575.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/004865.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/003552.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/003431.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/002808.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001672.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001195.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/000568.jpg'
 
 img = mpimg.imread(image_name)
 rclasses, rscores, rbboxes =  process_image(img)

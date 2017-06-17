@@ -145,6 +145,19 @@ added strong patch sampling
 
 In summary, after 100k, not much improvement at all.
 
+2017-06-10:
+
+Add dropout 0.8, aspect ratio to [0.5,2]
+
+30k, training, learning rate 0.1, mAP 0.46,0.49, (40k, 0.46,.0.49, not used)loss, 5.1
+
+60k, fine tuning, learning rate 0.01, mAP  0.56,0.63   loss 3.9
+90k, fine tuning, learning rate 0.01, mAP  0.59,0.69, loss, 3.6
+
+100k, fine tuning, learning rate 0.001,mAP  0.65,0.74, loss,3.8
+110k, fine tuning, learning rate 0.001,mAP   0.64,.75,loss ,3.4
+120k, fine tuning, learning rate 0.0005 mAP, 0.65,0.76, loss 3.4
+
 
 
 

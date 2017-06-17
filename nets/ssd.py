@@ -211,7 +211,7 @@ class SSDModel():
                 
         
             # Additional SSD blocks.
-            keep_prob=1.0
+            keep_prob=0.8
             with slim.arg_scope([slim.conv2d],
                             activation_fn=None):
                 with slim.arg_scope([slim.batch_norm],
