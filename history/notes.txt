@@ -111,7 +111,7 @@ fine tune can greatly improve training mAP, training loss.
 19, number of matched image 852 matched bboxes 1032, ratio 1.2112676056338028
 20, number of matched image 925 matched bboxes 1261, ratio 1.3632432432432433
 
-2017-05-37:
+2017-05-27:
 20k, training, 0.1 learning rate, loss 3.1, testing 
 80k, fine tuning, 0.05 training rate.loss 1.4, testing 0.57, training 0.97
 

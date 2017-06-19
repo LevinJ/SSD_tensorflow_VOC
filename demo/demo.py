@@ -89,18 +89,18 @@ image_name = 'street.jpg'
 image_name = path + image_name
 
 
-# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/000593.jpg'
-# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001086.jpg'
-# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/009075.jpg'
-# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/009957.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/005575.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/004865.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/003552.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/003431.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/002808.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001672.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001195.jpg'
-image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/000568.jpg'
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/000593.jpg'  #two cars
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001086.jpg'  #Two person and one bottle
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/009075.jpg'#many people, not very good
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/009957.jpg'  #horse and person
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/005575.jpg'   #plane
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/004865.jpg'  #horse
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/003552.jpg'  #car
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/003431.jpg'  #one person and one bottle
+image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/002808.jpg'  #motor and car
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001672.jpg'  #train
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/001195.jpg'  #dog
+# image_name = '../../data/voc/2007_test/VOCdevkit/VOC2007/JPEGImages/000568.jpg' #eagle
 
 img = mpimg.imread(image_name)
 rclasses, rscores, rbboxes =  process_image(img)
