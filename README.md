@@ -7,40 +7,50 @@ Levin Jian, June 2017
 
 
 
-### Overview
+# Overview
 [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/) is a publicly available benchmark dataset used for object recognition and detection. There are about 17k images in the dataset (VOC 2007 and VOC 2012), and contains 20 labelled classes like person, car, cat, bottle bicycle, sheep, sofa,and etc. The detectors we develooped can be used to determine what kind of objects an image contains, and where those objects are.
 
 We used the excellent work from [here](https://github.com/balancap/SSD-Tensorflow) as our baseline. It successfully converted the original SSD detector from caffe implementation to tensorflow implementation. The goal of our project is to focus on the trainig part of the problem. Specifically, We first load the VGG16 weights trained from ImageNET into our VGG 16  part of SSD model, train SSD modle on PASCAL VOC training dataset (VOC 2007 taineval and VOC 2012 train_eval), and evaluat SSD model on PASCAL VOC testig dataset (VOC 2007 test). Evaluation metric used is mAP.
 
 Techncially, tensorflow and slim are used as the neural network framework, and all the development is done in Python.
 
-### Final Result
+# Final Result
 
-Our SSD detecotrs achieves 0.65 mAP accuracy on VOC 2007 test dataset, at the speed of 8 rames/second. Below are a few examples of detection outputs.
+Our SSD detecotrs achieves 0.65 mAP accuracy on VOC 2007 test dataset, at the speed of 8 frames/second. Below are a few examples of detection outputs.
+
+![two person and one bottom](./writeup/two_person_one_bottle.png) 
+![two_cars](./writeup/two_cars.png)     
 
 
 
 Here is the training/evaluation chart,
 
+![train_eval](./writeup/train_eval.png)     
+
+
 and here the loss chart.
 
+![total_loss](./writeup/total_loss.png) 
 
-### Model Architecture
+# Model Architecture
 
 The core of Signle Shot MultiBox Detecotr is predicting category scores and bounding boxes offsets for a fixed set default boxes using small constitutional filters applied at features maps. For details, please refer to the [original paper](https://arxiv.org/abs/1512.02325)
 
 
-Here is the model architecture for SSD.
+Here is the model architecture for SSD. Excluding pooling, batch normalization, and dropout layers, there are 23 layers in all. Specifically, 13 VGG layers, and 10 SSD specific layers.
 
+![model_architecture](./writeup/model_architecture.png) 
 
-For some of the top layers in SSD architecture, specifically , conv4,conv7,conv8,conv9,conv10,conv11, each spatial location (3x3 region) will be used to predict a fixed set of default boxes: which classes these default boxes belong to, how much offsets these default boxes are relative to true position of the objects.  There are 8732 default boxes in all.
+For some of the top layers in SSD architecture, specifically, conv4,conv7,conv8,conv9,conv10,conv11, each spatial location (3x3 region) will be used to predict a fixed set of default boxes: which classes these default boxes belong to, how much offsets these default boxes are relative to true position of the objects.  There are 8732 default boxes in all.
 
 SSD only needs an input image and ground truth boxes for each object during training. Through our matching strategy, each of the default boxes will assigned with  a class label. If they are assigned with background class, we call them negative samples. If they are assigned with non-background class, we call them positive samples. For positive samples, we will also assign bounding boxes offsets (the offsets between default box and ground truth box). Our loss function is the summary of classification loss and location loss for these samples.
 
 Here is an example of how some of defalut boxes are assinged as positive samples.
 
+![default_boxes](./writeup/Default_Boxes.png)
 
-### Database
+
+# Database
 
 As mentioend earlier, VOC 2007 and VOC 2012 datasets are used in this projet, and they can be downloaed from the web.
 
@@ -51,22 +61,22 @@ wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
 ```
 
 
-### Training
+# Training
 
-1. Training strategy
+##  Training strategy  
 
 I conducted the training in mainly two phases:  
-1) Overfitting the training dataset
-During this phase, we mainly focus on getting high accuracy on training dataset. The purpose is to make sure that the data preparation, the model architecture, the loss function, the optimizer, the evaluation are all properly setup. The highest training mAP obtained is 0.98, This proves that, after some improvements over the baseline model implementation, our model is trainable and can converge well.
-2) Improve result over test dataset
+1. Overfitting the training dataset
+During this phase, we mainly focus on getting high accuracy on training dataset. The purpose is to make sure that the data preparation, the model architecture, the loss function, the optimizer, the evaluation are all properly setup. The highest training mAP obtained is 0.98, This proves that, after some improvements over the baseline model implementation, our model is trainable and can converge well.  
+2. Improve result over test dataset  
 During this phase, we mainly focus on improving test accuracy, by means of experimentig over optimiser, batch normalization, data preparation, batch normalization, dropout and etc.
 
 
-2. Experimentation Result
+##  Experimentation Result
 
 With the goal of improving testing accuracy, we conducted experimentations over various impacting aspects of the training.
 
-1) loss function
+###  loss function
 
 A few improvements are made over baseline model so that our model implementation in this regard are consistent with the original paper.
 
@@ -89,7 +99,7 @@ In the baseline, the adjustment of the ground truth bboxes is a bit inappropriat
 
 In our model, we clipped all ground truth box so that they are within [0,1] range.
 
-2) optimizer
+###  optimizer
 
 Throughout the experimentations, Adam optimizer it’s used, as it implements both momentum update and per parameter adaptive learning rate.
 
@@ -97,21 +107,21 @@ We did experiment a lot with learning rate though.  In the original paper, 0.001
 
 To my surprise, I find this does not work very well. The training took very long time to converge, and does not converge well at all. Later on I implemented batched normalization, and increased learning rate to 0.1, and this made a huge difference.  With 0.1 learning rate, we are able to achieve the loss in about half an hour which would have taken 8 hours if 0.001 learning rate is used.
 
-3)  data augmentation
+###  data augmentation  
 Three kinds of data augmentation are used, which is the same as the baseline model, except a few relevant hyperparameters.
 a) flip the image horizontally
 b)color distortion
 Randomly change the brightness, contrast , hue and saturation of the image.
 c)patch sampling
 
-4)  batch normalization
+###  batch normalization  
 
 batch normalization layers are added to the baseline model. They allowed us to use bigger learning rate and drastically reduced training time.
-5)  drop out
+###  drop out  
 Drop out is also experimented in this project since we saw a large gap between training accuracy and testing accuracy. It turned out that dropout does narrowed the gap between train and test accuracy, but it also dampen the training accuracy. At the end, we end up with roughly the same test  accuracy with or without dropout.
 
 
-3. Overall training progress
+##  Overall training progress
 
 Training experimentation and progress are logged in history/notes.txt file. Below are a few highlights
 
@@ -120,25 +130,25 @@ Training experimentation and progress are logged in history/notes.txt file. Belo
 3) data augmenation is very effective in improving testing accuray, from 0.5 to 0.65
 
 
-### Requried library
+# Requried library
 
 * Python 3.5
 * Tensorflow 1.0.0
 
-### Instructions for running the scripts
+# Instructions for running the scripts
 
 The training took about 58 hours on a Nvidia GTX 1080 GPU
 
-1. train SSD specific weights
+## train SSD specific weights
 run python ./train_model.py  with below setting
 ```
 self.max_number_of_steps = 30000
 self.learning_rate = 0.1
 self.fine_tune_vgg16 = False
  ```
-2. train VGG16 ad SSD specific weights
+## train VGG16 ad SSD specific weights
 
-1) run python ./train_model.py  with below setting
+1). run python ./train_model.py  with below setting
 
 ```
 self.fine_tune_vgg16 = True
@@ -146,7 +156,7 @@ self.max_number_of_steps = 900000
 self.learning_rate=0.01
 ```
 
-2) run python ./train_model.py  with below setting
+  2). run python ./train_model.py  with below setting
 
 ```
 self.fine_tune_vgg16 = True
@@ -154,23 +164,23 @@ self.max_number_of_steps = 1100000
 self.learning_rate=0.001
 ```
 
-3) run python ./train_model.py  with below setting
+  3). run python ./train_model.py  with below setting
 
 ```
 self.fine_tune_vgg16 = True
 self.max_number_of_steps = 1200000
 self.learning_rate=0.0005
 ```
-3. get both train and evaluation accuracy
+## get both train and evaluation accuracy
 
-1) run python ./run_all_checkpoints.py with below settings
+1). run python ./run_all_checkpoints.py with below settings
 
 ```
 min_step = 100
 step = 10000
 ```
 
-1) run python ./run_all_checkpoints.py -f with below settings
+2). run python ./run_all_checkpoints.py -f with below settings
 
 ```
 min_step = 30000
