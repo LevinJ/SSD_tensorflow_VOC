@@ -122,8 +122,62 @@ Training experimentation and progress are logged in history/notes.txt file. Belo
 
 ### Requried library
 
+* Python 3.5
+* Tensorflow 1.0.0
 
 ### Instructions for running the scripts
+
+The training took about 58 hours on a Nvidia GTX 1080 GPU
+
+1. train SSD specific weights
+run python ./train_model.py  with below setting
+```
+self.max_number_of_steps = 30000
+self.learning_rate = 0.1
+self.fine_tune_vgg16 = False
+ ```
+2. train VGG16 ad SSD specific weights
+
+1) run python ./train_model.py  with below setting
+
+```
+self.fine_tune_vgg16 = True
+self.max_number_of_steps = 900000
+self.learning_rate=0.01
+```
+
+2) run python ./train_model.py  with below setting
+
+```
+self.fine_tune_vgg16 = True
+self.max_number_of_steps = 1100000
+self.learning_rate=0.001
+```
+
+3) run python ./train_model.py  with below setting
+
+```
+self.fine_tune_vgg16 = True
+self.max_number_of_steps = 1200000
+self.learning_rate=0.0005
+```
+3. get both train and evaluation accuracy
+
+1) run python ./run_all_checkpoints.py with below settings
+
+```
+min_step = 100
+step = 10000
+```
+
+1) run python ./run_all_checkpoints.py -f with below settings
+
+```
+min_step = 30000
+step = 10000
+```
+
+
 
 
 
