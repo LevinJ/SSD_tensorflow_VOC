@@ -130,7 +130,7 @@ Training experimentation and progress are logged in history/notes.txt file. Belo
 2) Batch normalization and bigge learning rate made a huge diffence. traning accuray from 0.8 to 0.98  
 3) Data augmenation is very effective in improving testing accuray, from 0.5 to 0.65  
 
-# Current limitations  
+# Known limitations  
 
 Current implementation can do a decent detection job. but its performance can be further improved on some images, like below, 
 
