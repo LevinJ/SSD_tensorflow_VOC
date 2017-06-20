@@ -10,7 +10,7 @@
 # Overview
 [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/) is a publicly available benchmark dataset used for object recognition and detection. There are about 17k images in the dataset (VOC 2007 and VOC 2012), and contains 20 labelled classes like person, car, cat, bottle, bicycle, sheep, sofa, and etc. The detector we develooped can be used to determine what kind of objects an image contains, and where those objects are.
 
-We used the excellent work from [here](https://github.com/balancap/SSD-Tensorflow) as our baseline. It successfully converted the original SSD detector from caffe implementation to tensorflow implementation. The goal of our project is to focus on the trainig part of the problem. Specifically, We load the VGG16 weights trained from ImageNET into our VGG 16 part of SSD model, train SSD modle on PASCAL VOC training dataset (VOC 2007 train_eval and VOC 2012 train_eval), and evaluat SSD model on PASCAL VOC test dataset (VOC 2007 test). Evaluation metric is mAP.
+We used the excellent work from [here](https://github.com/balancap/SSD-Tensorflow) as our baseline. The baseline successfully converted the original SSD detector from caffe implementation to tensorflow implementation. The goal of our project is to focus on the trainig part of the problem. Specifically, We load the VGG16 weights trained from ImageNET into our VGG 16 part of SSD model, train SSD modle on PASCAL VOC training dataset (VOC 2007 train_eval and VOC 2012 train_eval), and evaluat SSD model on PASCAL VOC test dataset (VOC 2007 test). Evaluation metric is [mAP](https://sanchom.wordpress.com/tag/average-precision/).
 
 Techncially, tensorflow and slim are used as the neural network framework, and all the development is done in Python.
 
@@ -65,8 +65,8 @@ wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
 
 ##  Training Strategy  
 
-I conducted the training in mainly two phases:  
-1. Overfitting the training dataset
+I conducted the training in mainly two phases:   
+1. Overfitting the training dataset  
 During this phase, we mainly focus on getting high accuracy on training dataset. The purpose is to make sure that the data preparation, the model architecture, the loss function, the optimizer, the evaluation are all properly setup. The highest training mAP obtained is 0.98, This proves that, after some improvements over the baseline model implementation, our model is trainable and can converge well.  
 2. Improve result over test dataset  
 During this phase, we mainly focus on improving test accuracy, by means of experimentig over optimiser, batch normalization, data preparation, batch normalization, dropout and etc.
@@ -134,7 +134,7 @@ Training experimentation and progress are logged in history/notes.txt file. Belo
 
 Current implementation can do a decent detection job. but its performance can be further improved on some images, like below, 
 
-![default_boxes](./writeup/many_people.png)
+![many_people](./writeup/many_people.png)
 
 
 In the original paper, the test accuracy is 0.78. If we could push our current test accurcy from 0.65 to 0.78 or higher, we should be able to have better detection result. I think the key should lie in how we perform data augmentation,
@@ -143,6 +143,7 @@ In the original paper, the test accuracy is 0.78. If we could push our current t
 	Our current implementation already try to closely follow the instruction of the original paper regarding data augmenation. But we implemented with python and tensorflow, while the original paper implemented with c++, caffe and opencv. There should be some difference between the two implementations that is causeing the test accuracy gap.
 2.  Add zoom out operation     
     SSD is known to have relatively poor performance on detecitng small objects (like bottle,pottedplant), as also confirmed by our SSD implementation. So one idea to improve is to add more small objects to training data by performing zoom out operation during data augmentation.
+	![bottle_accuracy](./writeup/bottle_accuracy.png)
 
 
 # Requried library
