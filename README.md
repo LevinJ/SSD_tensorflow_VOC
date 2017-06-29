@@ -82,20 +82,20 @@ A few improvements are made over baseline model so that our model implementation
 
 a) strict smooth L1  loss implementation  
 
-When the regression targets are unbounded as it is the case in this project, training with L2 loss can require careful tuning of learning rates in order to prevent exploding gradients. A strict implementation of L1 loss can reduce this risk.
+When the regression targets are unbounded as it is the case in this project, training with L2 loss would require careful tuning of learning rates in order to prevent exploding gradients. A strict implementation of L1 loss can reduce this risk.
 
 b) Matching strategy adjustment  
 
 As mentioned earlier, we assign each and every default box with class label and location offset based on ground truth bounding boxes. This is done by matching strategy.
 
-In the baseline model, A default box is matched with a grounding truth bounding box if its jaccard overlap is bigger than 0.5. This has a potential problem. For some ground truth box, it might happen  that its jaccard overlap with all default box are less than 0.5, as a result, these ground truth box will not be assigned to any default box, this might not be good from the perspective of training.
+In the baseline model, A default box is matched with a grounding truth bounding box if its jaccard overlap is bigger than 0.5. This has a potential problem. For some ground truth box, it might happen that its jaccard overlap with all default box are less than 0.5, as a result, these ground truth box will not be assigned to any default box, this might not be good from the perspective of training.
 
 In our model, we correct this by strictly following the matching strategy presented in the original paper. That is, we first match each ground truth box with a default box which has biggest jaccard overlap, and then we assign default box to ground truth box which has jaccard overlap bigger than 0.5. 
 
 c) Out of bounds bounding box handling
-In this project, we used raddom sampling data augmentation. In the original image, we randomly crop a small region to serve as our training image. As a result, ground truth box needs to be adjusted. 
+In this project, we used raddom sampling data augmentation. We randomly crop a small region of the original image to serve as our training image. As a result, ground truth box needs to be adjusted. 
 
-In the baseline, the adjustment of the ground truth bboxes is a bit inappropriate in that some of the ground truth box are out of the bounds (less than 0, or bigger than 1). Intuitively, this might make sense, but it also turns that this make the training harder to converge. With hindsight,  I think this makes training harder to converge because it’s fundamentally a harder problem in that we are required to predict the accurate position of the whole object with a partial object.
+In the baseline, the adjustment of the ground truth bboxes is a bit inappropriate in that some of the ground truth box are out of the bounds (less than 0, or bigger than 1). Intuitively, this might make sense, but it also turns that this makes the training harder to converge. With hindsight,  I think this makes training harder to converge because it’s fundamentally a harder problem in that we are required to predict the accurate position of the whole object with a partial object.
 
 In our model, we clipped all ground truth box so that they are within [0,1] range.
 
@@ -109,9 +109,9 @@ To my surprise, I find this does not work very well. The training took very long
 
 ###  Data augmentation  
 Three kinds of data augmentation are used, which is the same as the baseline model, except a few relevant hyperparameters.
-a) flip the image horizontally  
-b)color distortion  
-Randomly change the brightness, contrast , hue and saturation of the image.
+a) flip the image horizontally   
+b)color distortion   
+Randomly change the brightness, contrast , hue and saturation of the image.   
 c)patch sampling  
 
 ###  Batch normalization  
@@ -119,7 +119,7 @@ c)patch sampling
 Batch normalization layers are added to the baseline model. They allowed us to use bigger learning rate and drastically reduced training time.
 
 ###  Drop out  
-Drop out is also experimented in this project since we saw a large gap between training accuracy and testing accuracy. It turned out that dropout does narrowed the gap between train and test accuracy, but it also dampen the training accuracy. At the end, we end up with roughly the same test accuracy with or without dropout.
+Drop out is also experimented in this project since we saw a large gap between training accuracy and testing accuracy. It turned out that dropout does narrow the gap between train and test accuracy, but it also dampen the training accuracy a lot. At the end, we end up with roughly the same test accuracy with or without dropout.
 
 
 ##  Training summary
@@ -127,7 +127,7 @@ Drop out is also experimented in this project since we saw a large gap between t
 Training experimentation and progress are logged in history/notes.txt file. Below are a quick summary:
 
 1) Fix bugs in baseline made the model converge  
-2) Batch normalization and bigge learning rate made a huge diffence. traning accuray from 0.8 to 0.98  
+2) Batch normalization and bigge learning rate made a huge difference. traning accuray from 0.8 to 0.98  
 3) Data augmenation is very effective in improving testing accuray, from 0.5 to 0.65  
 
 # Known limitations  
