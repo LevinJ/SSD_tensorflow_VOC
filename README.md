@@ -60,6 +60,24 @@ wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar
 wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
 ```
 
+After downloading above datasets, we use pascalvoc_to_tfrecords.py scipt under datasets folder to convert the data into TF Records format, which will be used by our training scritp.
+
+For example, to generate voc_train_2007 TF record files, uncomment below code lines in pascalvoc_to_tfrecords.py
+
+```
+#dataset_dir = "../../data/voc/2007_train/VOCdevkit/VOC2007/"
+#output_dir = "../../data/voc/tfrecords/"
+#name='voc_train_2007'
+```
+comment below code lines
+
+```
+dataset_dir = "../../data/voc/2007_test/VOCdevkit/VOC2007/"
+output_dir = "../../data/voc/tfrecords/"
+name='voc_test_2007'
+```
+
+And then execute `python pascalvoc_to_tfrecords.py` command in terminal. Note that you might have to modify the `dataset_dir` and `output_dir` based on where you put your dataset file, and where you want the TF records to be saved.
 
 # Training
 
