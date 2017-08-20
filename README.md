@@ -183,12 +183,14 @@ self.fine_tune_vgg16 = False
 ## Train VGG16 ad SSD specific weights
 
 	1). Run python ./train_model.py  with below setting
-
+Before you run the ./train_model.py script, you will have to download the vgg16 pretrained weigths from [here](http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz) to a local folder, change the setting of `self.checkpoint_path` if necessary. 
 ```
+self.checkpoint_path = '../data/trained_models/vgg16/vgg_16.ckpt'
 self.fine_tune_vgg16 = True
 self.max_number_of_steps = 900000
 self.learning_rate=0.01
 ```
+
 
   2). Run python ./train_model.py  with below setting
 
