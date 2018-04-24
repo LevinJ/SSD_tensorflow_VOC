@@ -155,7 +155,7 @@ Current implementation can do a decent detection job. but its performance can be
 ![many_people](./writeup/many_people.png)
 
 
-In the original paper, the test accuracy is 0.78. If we could push our current test accurcy from 0.65 to 0.78 or higher, we should be able to have better detection result. I think the key should lie in how we perform data augmentation,
+In the original paper, the test accuracy is 0.69. If we could push our current test accurcy from 0.65 to 0.69 or higher, we should be able to have better detection result. I think the key should lie in how we perform data augmentation,
 
 1.  Replicate the reference data augmentation implementation as much as possible    
 	Our current implementation already try to closely follow the instruction of the original paper regarding data augmenation. But we implemented with python and tensorflow, while the original paper implemented with c++, caffe and opencv. There should be some difference between the two implementations that is causeing the test accuracy gap.
